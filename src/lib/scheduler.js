@@ -45,7 +45,5 @@ function xml(value) {
 }
 
 export function windowsQuote(value) {
-  const text = String(value);
-  if (!/[\s"]/u.test(text)) return text;
-  return `"${text.replace(/(\\*)"/g, "$1$1\\\"").replace(/(\\+)$/g, "$1$1")}"`;
+  return `"${String(value).replaceAll('"', '""').replaceAll("%", "%%")}"`;
 }

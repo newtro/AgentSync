@@ -21,6 +21,8 @@ test("Windows schedule invokes cmd launchers through cmd.exe with explicit safe 
 });
 
 test("Windows quoting preserves spaces and trailing backslashes", () => {
-  assert.equal(windowsQuote("plain"), "plain");
-  assert.equal(windowsQuote("C:\\A B\\"), '"C:\\A B\\\\"');
+  assert.equal(windowsQuote("plain"), '"plain"');
+  assert.equal(windowsQuote("C:\\A B\\"), '"C:\\A B\\"');
+  assert.equal(windowsQuote("C:\\State&whoami\\"), '"C:\\State&whoami\\"');
+  assert.equal(windowsQuote("%TEMP%\\A^B(C)"), '"%%TEMP%%\\A^B(C)"');
 });
