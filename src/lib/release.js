@@ -287,9 +287,9 @@ export function validateStableIndex(index) {
     invariant(release && typeof release === "object" && Object.keys(release).every((key) => allowedRelease.has(key)), "INDEX_RELEASE", `Stable release has unknown metadata: ${skillId}`);
     invariant(VERSION_PATTERN.test(release.logicalVersion ?? "") && release.logicalVersion.length <= MAX_VERSION_LENGTH && /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(release.sourceCommit ?? ""), "INDEX_RELEASE", `Stable release metadata or immutable source commit is invalid: ${skillId}`);
     invariant(release.skillId === undefined || release.skillId === skillId, "INDEX_RELEASE", `Stable release skill id does not match its index key: ${skillId}`);
-    invariant(release.minimumUpdaterVersion === undefined || /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(release.minimumUpdaterVersion), "INDEX_RELEASE", `Stable release minimum updater version must be a stable semantic version: ${skillId}`);
+    invariant(release.minimumUpdaterVersion === undefined || (/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(release.minimumUpdaterVersion) && release.minimumUpdaterVersion.length <= MAX_VERSION_LENGTH), "INDEX_RELEASE", `Stable release minimum updater version must be a bounded stable semantic version: ${skillId}`);
     invariant(release.promotedAt === undefined || isRfc3339Timestamp(release.promotedAt), "INDEX_RELEASE", `Stable release promotion timestamp is invalid: ${skillId}`);
-    invariant(release.rollbackOf === undefined || VERSION_PATTERN.test(release.rollbackOf), "INDEX_RELEASE", `Stable release rollback provenance is invalid: ${skillId}`);
+    invariant(release.rollbackOf === undefined || (VERSION_PATTERN.test(release.rollbackOf) && release.rollbackOf.length <= MAX_VERSION_LENGTH), "INDEX_RELEASE", `Stable release rollback provenance is invalid: ${skillId}`);
     invariant(release.restoredFromSnapshot === undefined || (typeof release.restoredFromSnapshot === "string" && release.restoredFromSnapshot.length > 0), "INDEX_RELEASE", `Stable release snapshot provenance is invalid: ${skillId}`);
     invariant(Number.isSafeInteger(release.providerRevision) && release.providerRevision > 0, "INDEX_RELEASE", `Stable release provider revision is invalid: ${skillId}`);
     invariant(Array.isArray(release.requiredTargets), "INDEX_RELEASE", `Stable release target contract is missing: ${skillId}`);

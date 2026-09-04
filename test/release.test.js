@@ -187,6 +187,15 @@ test("stable index rejects prerelease updater compatibility and malformed proven
   assert.throws(() => validateStableIndex({ schemaVersion: 1, generation: 0, skills: {}, updater: { version: "1.0.0-beta.1", artifacts: {} } }), { code: "INDEX_UPDATER" });
 });
 
+test("stable index bounds compatibility and rollback versions", () => {
+  const promoted = promoteCandidates(emptyStableIndex(), { candidates: [candidate("1.0.0")] }).index;
+  promoted.skills["scott/example"].minimumUpdaterVersion = `${"1".repeat(41)}.0.0`;
+  assert.throws(() => validateStableIndex(promoted), { code: "INDEX_RELEASE" });
+  promoted.skills["scott/example"].minimumUpdaterVersion = "1.0.0";
+  promoted.skills["scott/example"].rollbackOf = `${"1".repeat(41)}.0.0`;
+  assert.throws(() => validateStableIndex(promoted), { code: "INDEX_RELEASE" });
+});
+
 test("published schema binds updater versions to stable semantic versions", async () => {
   const schema = JSON.parse(await readFile(new URL("../schema/stable-index.schema.json", import.meta.url), "utf8"));
   assert.equal(schema.$defs.release.properties.minimumUpdaterVersion.$ref, "#/$defs/stableSemver");
@@ -328,7 +337,7 @@ test("build canonicalizes malformed source frontmatter before strict provider va
   const result = await buildRepositoryCandidates([skill], root, "commit", () => 1, { validateClaude: async (value) => { validatedPath = value; } });
   assert.equal(result.candidates.length, 1);
   const generated = await readFile(path.join(validatedPath, "skills", providerSafeName("scott/frontmatter", target), "SKILL.md"), "utf8");
-  assert.match(generated, /^---\nname: frontmatter\ndescription: "Safe generated metadata"\n---/);
+  assert.match(generated, new RegExp(`^---\\nname: ${providerSafeName("scott/frontmatter", target)}\\ndescription: "Safe generated metadata"\\n---`));
   assert.doesNotMatch(generated, /\[broken/);
 });
 

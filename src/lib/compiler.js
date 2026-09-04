@@ -52,15 +52,15 @@ export function compileProjection(canonical, targetInput, sourceCommit = "workin
 
   const skillFile = selected.get("SKILL.md");
   invariant(skillFile?.kind === "text", "SKILL_TEXT_REQUIRED", "SKILL.md must be declared as text");
+  const slug = providerSafeName(manifest.id, target);
   if (manifest.lifecycle.state === "removed") {
     const tombstone = `# ${manifest.id} (removed)\n\nThis skill is disabled and must not perform its former behavior.\n`;
-    skillFile.content = Buffer.from(ensureSkillFrontmatter(tombstone, manifest));
+    skillFile.content = Buffer.from(ensureSkillFrontmatter(tombstone, manifest, slug));
   } else {
-    skillFile.content = Buffer.from(ensureSkillFrontmatter(skillFile.content.toString("utf8"), manifest));
+    skillFile.content = Buffer.from(ensureSkillFrontmatter(skillFile.content.toString("utf8"), manifest, slug));
   }
 
   const files = packageForHarness(manifest, target, selected, providerRevision);
-  const slug = providerSafeName(manifest.id, target);
   const executableFiles = [...selected].filter(([, file]) => file.executable).map(([relative]) => target.harness === "codex" ? relative : `skills/${slug}/${relative}`).sort();
   if (manifest.lifecycle.state !== "removed") runSmokeTests(manifest, target, files);
   const payloadDigest = digestFiles(files);
@@ -154,7 +154,7 @@ export function providerTargetKey(target) {
   return targetKey(normalized);
 }
 
-function ensureSkillFrontmatter(text, manifest) {
+function ensureSkillFrontmatter(text, manifest, slug) {
   const normalized = text.replace(/\r\n/g, "\n");
   let body = normalized;
   if (normalized.startsWith("---\n")) {
@@ -163,5 +163,5 @@ function ensureSkillFrontmatter(text, manifest) {
     body = normalized.slice(end + 5).replace(/^\n+/, "");
   }
   const description = JSON.stringify(manifest.description);
-  return `---\nname: ${manifest.id.split("/").at(-1)}\ndescription: ${description}\n---\n\n${body.endsWith("\n") ? body : `${body}\n`}`;
+  return `---\nname: ${slug}\ndescription: ${description}\n---\n\n${body.endsWith("\n") ? body : `${body}\n`}`;
 }

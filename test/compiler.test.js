@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { compileProjection, writeProjection } from "../src/lib/compiler.js";
+import { compileProjection, providerSafeName, writeProjection } from "../src/lib/compiler.js";
 
 const target = { harness: "codex", os: "darwin", profile: "default", scope: "global" };
 const canonical = {
@@ -24,7 +24,7 @@ test("compilation is deterministic and normalizes line endings", () => {
   const first = compileProjection(canonical, target, "abc123");
   const second = compileProjection(canonical, target, "abc123");
   assert.equal(first.digest, second.digest);
-  assert.match(first.files.get("SKILL.md").toString(), /^---\nname: example\ndescription: "Example description"\n---/);
+  assert.match(first.files.get("SKILL.md").toString(), new RegExp(`^---\\nname: ${providerSafeName("scott/example", target)}\\ndescription: "Example description"\\n---`));
 });
 
 test("Claude projection uses plugin packaging", () => {
@@ -39,6 +39,7 @@ test("Claude projection uses plugin packaging", () => {
   assert.ok(skillFile);
   const plugin = JSON.parse(projection.files.get(".claude-plugin/plugin.json"));
   assert.match(plugin.name, /^scott-example-[a-f0-9]{8}$/);
+  assert.match(projection.files.get(skillFile).toString(), new RegExp(`^---\\nname: ${plugin.name}\\n`));
   assert.equal(plugin.version, "3.0.0");
 });
 

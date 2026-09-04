@@ -10,6 +10,7 @@ import { redact } from "./security.js";
 import { targetKey } from "./target.js";
 import { CURRENT_VERSION } from "./version.js";
 import { compareSemanticVersions } from "./release.js";
+import { providerSafeName } from "./compiler.js";
 
 export const UPDATER_VERSION = CURRENT_VERSION;
 
@@ -159,7 +160,7 @@ export async function installRelease({ distributionRoot, stateRoot, enrollment, 
   for (const runtime of metadata.requiredRuntimes ?? []) if (!await runtimeAvailable(runtime)) unavailable.push(runtime);
   invariant(unavailable.length === 0, "RUNTIME_UNAVAILABLE", `Required runtimes are unavailable for ${skillId}: ${unavailable.join(", ")}`);
 
-  const slug = managedSkillSlug(skillId);
+  const slug = managedSkillSlug(skillId, enrollment);
   const destination = managedPath(enrollment.installRoot, slug);
   const stage = managedPath(enrollment.installRoot, `.skillmesh-stage-${slug}-${randomUUID()}`);
   const backup = managedPath(enrollment.installRoot, `.skillmesh-backup-${slug}-${randomUUID()}`);
@@ -171,7 +172,7 @@ export async function installRelease({ distributionRoot, stateRoot, enrollment, 
   let activated = false;
   let drifted = false;
   try {
-    const prior = await readInstalledState(stateRoot, enrollment.id, skillId);
+    const prior = await readInstalledState(stateRoot, enrollment, skillId);
     const currentDigest = await safeDigest(destination);
     invariant(!currentDigest || prior?.activeDigest, "UNMANAGED_CONFLICT", `Refusing to replace unmanaged skill copy: ${skillId}`);
     if (currentDigest && prior?.activeDigest && currentDigest !== prior.activeDigest) {
@@ -185,7 +186,7 @@ export async function installRelease({ distributionRoot, stateRoot, enrollment, 
     await rename(stage, destination);
     activated = true;
     invariant(await digestTree(destination) === artifact.digest, "ACTIVATE_VERIFY", `Activated digest mismatch for ${skillId}`);
-    await writeInstalledState(stateRoot, enrollment.id, skillId, {
+    await writeInstalledState(stateRoot, enrollment, skillId, {
       activeDigest: artifact.digest,
       logicalVersion: release.logicalVersion,
       installedAt: now.toISOString()
@@ -225,16 +226,16 @@ export function releasesForEnrollment(index, enrollment) {
 }
 
 export async function removeRelease({ stateRoot, enrollment, skillId, release, now = new Date() }) {
-  const destination = managedPath(enrollment.installRoot, managedSkillSlug(skillId));
-  const prior = await readInstalledState(stateRoot, enrollment.id, skillId);
+  const destination = managedPath(enrollment.installRoot, managedSkillSlug(skillId, enrollment));
+  const prior = await readInstalledState(stateRoot, enrollment, skillId);
   const currentDigest = await safeDigest(destination);
-  if (!currentDigest) return statusRecord(enrollment, skillId, "removed", { desired: null, installed: null, active: "verified-absent", lifecycle: "removed" });
+  if (!currentDigest) return statusRecord(enrollment, skillId, "removed", { desired: null, installed: null, active: "unknown", lifecycle: "removed" });
   invariant(prior?.activeDigest, "REMOVE_UNMANAGED", `Refusing to remove an unmanaged copy of ${skillId}`);
   if (currentDigest !== prior.activeDigest) {
     await preserveDrift({ stateRoot, enrollment, skillId, destination, priorDigest: prior.activeDigest, observedDigest: currentDigest, now });
   }
   await rm(destination, { recursive: true });
-  await writeInstalledState(stateRoot, enrollment.id, skillId, { ...prior, removedAt: now.toISOString(), lifecycle: "removed" });
+  await writeInstalledState(stateRoot, enrollment, skillId, { ...prior, removedAt: now.toISOString(), lifecycle: "removed" });
   return statusRecord(enrollment, skillId, "unknown", { desired: null, installed: null, active: "unknown", lifecycle: "removed" });
 }
 
@@ -256,7 +257,7 @@ function versionLessThan(left, right) {
 }
 
 async function preserveDrift({ stateRoot, enrollment, skillId, destination, priorDigest, observedDigest, now }) {
-  const archive = managedPath(stateRoot, "drift", now.toISOString().replace(/[:.]/g, "-"), encodeURIComponent(enrollment.id), managedSkillSlug(skillId));
+  const archive = managedPath(stateRoot, "drift", now.toISOString().replace(/[:.]/g, "-"), encodeURIComponent(enrollment.id), managedSkillSlug(skillId, enrollment));
   await mkdir(path.dirname(archive), { recursive: true });
   await cp(destination, path.join(archive, "tree"), { recursive: true, errorOnExist: true });
   await writeFile(path.join(archive, "drift.json"), stableStringify({ skillId, endpointId: enrollment.id, priorDigest, observedDigest, preservedAt: now.toISOString() }));
@@ -275,13 +276,18 @@ function statusRecord(enrollment, skillId, state, extra) {
   return { endpointId: enrollment.id, skillId, state, ...extra };
 }
 
-async function installedStatePath(stateRoot, endpointIdValue, skillId) {
-  return managedPath(stateRoot, "installed", encodeURIComponent(endpointIdValue), `${managedSkillSlug(skillId)}.json`);
+async function installedStatePath(stateRoot, enrollment, skillId) {
+  return managedPath(stateRoot, "installed", encodeURIComponent(enrollment.id), `${skillId.replace("/", "__")}.json`);
 }
 
-function managedSkillSlug(skillId) {
+function managedSkillSlug(skillId, enrollment) {
   invariant(/^[a-z0-9][a-z0-9.-]*\/[a-z0-9][a-z0-9-]*$/.test(skillId), "SKILL_ID", `Unsafe managed skill id: ${skillId}`);
-  return skillId.replace("/", "__");
+  return providerSafeName(skillId, {
+    harness: enrollment.harness,
+    os: enrollment.os,
+    profile: enrollment.profile,
+    scope: enrollment.scope
+  });
 }
 
 function managedPath(root, ...segments) {
@@ -291,17 +297,17 @@ function managedPath(root, ...segments) {
   return value;
 }
 
-async function readInstalledState(stateRoot, endpointIdValue, skillId) {
+async function readInstalledState(stateRoot, enrollment, skillId) {
   try {
-    return JSON.parse(await readFile(await installedStatePath(stateRoot, endpointIdValue, skillId), "utf8"));
+    return JSON.parse(await readFile(await installedStatePath(stateRoot, enrollment, skillId), "utf8"));
   } catch (error) {
     if (error.code === "ENOENT") return null;
     throw error;
   }
 }
 
-async function writeInstalledState(stateRoot, endpointIdValue, skillId, value) {
-  const filePath = await installedStatePath(stateRoot, endpointIdValue, skillId);
+async function writeInstalledState(stateRoot, enrollment, skillId, value) {
+  const filePath = await installedStatePath(stateRoot, enrollment, skillId);
   await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, stableStringify(value), { mode: 0o600 });
 }

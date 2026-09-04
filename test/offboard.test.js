@@ -6,14 +6,18 @@ import test from "node:test";
 
 import { offboardEndpoint, removeNativeSchedule } from "../src/lib/offboard.js";
 import { digestTree } from "../src/lib/fs-tree.js";
+import { providerSafeName } from "../src/lib/compiler.js";
+
+const codexTarget = { harness: "codex", os: "darwin", profile: "default", scope: "global" };
 
 test("offboarding does not remove unmanaged skill copies", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-offboard-"));
   const installRoot = path.join(root, "skills");
-  await mkdir(path.join(installRoot, "scott__example"), { recursive: true });
-  await writeFile(path.join(installRoot, "scott__example", "SKILL.md"), "unmanaged");
+  const slug = providerSafeName("scott/example", codexTarget);
+  await mkdir(path.join(installRoot, slug), { recursive: true });
+  await writeFile(path.join(installRoot, slug, "SKILL.md"), "unmanaged");
   const enrollment = { id: "endpoint", harness: "codex", os: "darwin", profile: "default", scope: "global", mode: "direct", installRoot };
-  const target = { harness: "codex", os: "darwin", profile: "default", scope: "global" };
+  const target = codexTarget;
   const index = { skills: { "scott/example": { artifacts: { "codex--darwin--default--global": { target } } } } };
   const result = await offboardEndpoint({
     config: { enrollments: [enrollment] },
@@ -31,7 +35,7 @@ test("offboarding removes managed direct skills even when absent from the curren
   const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-offboard-stale-"));
   const stateRoot = path.join(root, "state");
   const installRoot = path.join(root, "skills");
-  const destination = path.join(installRoot, "scott__stale");
+  const destination = path.join(installRoot, providerSafeName("scott/stale", codexTarget));
   await mkdir(destination, { recursive: true });
   await writeFile(path.join(destination, "SKILL.md"), "managed");
   const enrollment = { id: "endpoint", harness: "codex", os: "darwin", profile: "default", scope: "global", mode: "direct", installRoot };

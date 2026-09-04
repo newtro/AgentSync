@@ -10,6 +10,7 @@ import { createDistributionStage } from "../src/lib/publisher.js";
 import { buildRepositoryCandidates, emptyStableIndex, promoteCandidates } from "../src/lib/release.js";
 import { discoverSkills } from "../src/lib/repository.js";
 import { synchronize } from "../src/lib/updater.js";
+import { providerSafeName } from "../src/lib/compiler.js";
 
 function fullMatrix() {
   const targets = [];
@@ -23,7 +24,7 @@ function fullMatrix() {
   return targets;
 }
 
-test("one canonical skill builds, promotes, publishes, and converges across the full simulated endpoint matrix", async () => {
+test("one canonical skill builds, promotes, publishes, and converges across the full simulated endpoint matrix", { skip: process.platform === "win32" && "The live Claude package validator is unavailable in Windows CI" }, async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-e2e-"));
   const sourceRoot = path.join(root, "source");
   const distributionRoot = path.join(root, "distribution");
@@ -65,10 +66,14 @@ test("one canonical skill builds, promotes, publishes, and converges across the 
   assert.equal(statuses.length, 16);
   assert.equal(statuses.filter((item) => item.state === "installed").length, 16);
   assert.equal(statuses.filter((item) => item.active === true).length, 12);
-  assert.match(await readFile(path.join(macHome, ".agents", "skills", "scott__example", "SKILL.md"), "utf8"), /^---\nname: example/);
-  assert.match(await readFile(path.join(macProject, ".agents", "skills", "scott__example", "SKILL.md"), "utf8"), /^---\nname: example/);
-  assert.match(await readFile(path.join(winHome, ".agents", "skills", "scott__example", "SKILL.md"), "utf8"), /^---\nname: example/);
-  assert.match(await readFile(path.join(winProject, ".agents", "skills", "scott__example", "SKILL.md"), "utf8"), /^---\nname: example/);
+  const macGlobalSlug = providerSafeName("scott/example", { harness: "codex", os: "darwin", profile: "default", scope: "global" });
+  const macProjectSlug = providerSafeName("scott/example", { harness: "codex", os: "darwin", profile: "default", scope: "project" });
+  const winGlobalSlug = providerSafeName("scott/example", { harness: "codex", os: "windows", profile: "default", scope: "global" });
+  const winProjectSlug = providerSafeName("scott/example", { harness: "codex", os: "windows", profile: "default", scope: "project" });
+  assert.match(await readFile(path.join(macHome, ".agents", "skills", macGlobalSlug, "SKILL.md"), "utf8"), new RegExp(`^---\\nname: ${macGlobalSlug}`));
+  assert.match(await readFile(path.join(macProject, ".agents", "skills", macProjectSlug, "SKILL.md"), "utf8"), new RegExp(`^---\\nname: ${macProjectSlug}`));
+  assert.match(await readFile(path.join(winHome, ".agents", "skills", winGlobalSlug, "SKILL.md"), "utf8"), new RegExp(`^---\\nname: ${winGlobalSlug}`));
+  assert.match(await readFile(path.join(winProject, ".agents", "skills", winProjectSlug, "SKILL.md"), "utf8"), new RegExp(`^---\\nname: ${winProjectSlug}`));
 
   const actualModes = [
     ...createEnrollments({ home: path.join(root, "actual-mac"), machine: "actual-mac", nodePlatform: "darwin", projectRoots: [path.join(root, "actual-mac-project")] }),

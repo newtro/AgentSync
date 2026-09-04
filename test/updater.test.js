@@ -6,6 +6,12 @@ import test from "node:test";
 
 import { digestTree } from "../src/lib/fs-tree.js";
 import { synchronize, withEndpointLock } from "../src/lib/updater.js";
+import { providerSafeName } from "../src/lib/compiler.js";
+
+function installSlug(f) {
+  const { harness, os, profile, scope } = f.enrollment;
+  return providerSafeName("scott/example", { harness, os, profile, scope });
+}
 
 async function fixture() {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-update-"));
@@ -43,7 +49,7 @@ async function refreshArtifact(f) {
 test("sync installs a verified direct artifact atomically", async () => {
   const f = await fixture();
   const statuses = await synchronize({ distributionRoot: f.distributionRoot, index: f.index, enrollments: [f.enrollment], stateRoot: path.join(f.root, "state") });
-  assert.equal(await readFile(path.join(f.enrollment.installRoot, "scott__example", "SKILL.md"), "utf8"), "# Stable\n");
+  assert.equal(await readFile(path.join(f.enrollment.installRoot, installSlug(f), "SKILL.md"), "utf8"), "# Stable\n");
   assert.equal(statuses[0].state, "installed");
   assert.equal(statuses[0].active, "unknown");
 });
@@ -59,20 +65,20 @@ test("sync does not activate a projection whose declared runtime is unavailable"
   const statuses = await synchronize({ distributionRoot: f.distributionRoot, index: f.index, enrollments: [f.enrollment], stateRoot: path.join(f.root, "state"), runtimeAvailable: async () => false });
   assert.equal(statuses[0].state, "failed");
   assert.match(statuses[0].error, /Required runtimes are unavailable/);
-  await assert.rejects(readFile(path.join(f.enrollment.installRoot, "scott__example", "SKILL.md")));
+  await assert.rejects(readFile(path.join(f.enrollment.installRoot, installSlug(f), "SKILL.md")));
 });
 
 test("sync preserves drift before restoring stable content", async () => {
   const f = await fixture();
   const stateRoot = path.join(f.root, "state");
   await synchronize({ distributionRoot: f.distributionRoot, index: f.index, enrollments: [f.enrollment], stateRoot, now: new Date("2026-01-01T00:00:00Z") });
-  await writeFile(path.join(f.enrollment.installRoot, "scott__example", "SKILL.md"), "local edit\n");
+  await writeFile(path.join(f.enrollment.installRoot, installSlug(f), "SKILL.md"), "local edit\n");
   const statuses = await synchronize({ distributionRoot: f.distributionRoot, index: f.index, enrollments: [f.enrollment], stateRoot, now: new Date("2026-01-02T00:00:00Z") });
   assert.equal(statuses[0].state, "drifted");
   assert.equal(statuses[0].recoveredTo, "stable");
-  const preserved = path.join(stateRoot, "drift", "2026-01-02T00-00-00-000Z", encodeURIComponent(f.enrollment.id), "scott__example", "tree", "SKILL.md");
+  const preserved = path.join(stateRoot, "drift", "2026-01-02T00-00-00-000Z", encodeURIComponent(f.enrollment.id), installSlug(f), "tree", "SKILL.md");
   assert.equal(await readFile(preserved, "utf8"), "local edit\n");
-  assert.equal(await readFile(path.join(f.enrollment.installRoot, "scott__example", "SKILL.md"), "utf8"), "# Stable\n");
+  assert.equal(await readFile(path.join(f.enrollment.installRoot, installSlug(f), "SKILL.md"), "utf8"), "# Stable\n");
 });
 
 test("provider-managed endpoints are never falsely reported installed", async () => {
@@ -134,7 +140,7 @@ test("a newly denied direct target removes its previously managed copy", async (
   release.artifacts = {};
   const statuses = await synchronize({ distributionRoot: f.distributionRoot, index: f.index, enrollments: [f.enrollment], stateRoot });
   assert.equal(statuses[0].state, "denied");
-  await assert.rejects(readFile(path.join(f.enrollment.installRoot, "scott__example", "SKILL.md")));
+  await assert.rejects(readFile(path.join(f.enrollment.installRoot, installSlug(f), "SKILL.md")));
 });
 
 test("removal waits for grace then removes only a managed copy", async () => {
@@ -147,10 +153,10 @@ test("removal waits for grace then removes only a managed copy", async () => {
   await refreshArtifact(f);
   const grace = await synchronize({ distributionRoot: f.distributionRoot, index: f.index, enrollments: [f.enrollment], stateRoot, now: new Date("2026-01-07T00:00:00Z") });
   assert.equal(grace[0].lifecycle, "deprecated");
-  assert.match(await readFile(path.join(f.enrollment.installRoot, "scott__example", "SKILL.md"), "utf8"), /Disabled/);
+  assert.match(await readFile(path.join(f.enrollment.installRoot, installSlug(f), "SKILL.md"), "utf8"), /Disabled/);
   const removed = await synchronize({ distributionRoot: f.distributionRoot, index: f.index, enrollments: [f.enrollment], stateRoot, now: new Date("2026-01-09T00:00:00Z") });
   assert.equal(removed[0].lifecycle, "removed");
-  await assert.rejects(readFile(path.join(f.enrollment.installRoot, "scott__example", "SKILL.md")));
+  await assert.rejects(readFile(path.join(f.enrollment.installRoot, installSlug(f), "SKILL.md")));
 });
 
 test("a removal-due Desktop endpoint receives an exact uninstall action", async () => {
@@ -165,11 +171,11 @@ test("a removal-due Desktop endpoint receives an exact uninstall action", async 
 
 test("first sync refuses to overwrite an unmanaged matching directory", async () => {
   const f = await fixture();
-  await mkdir(path.join(f.enrollment.installRoot, "scott__example"), { recursive: true });
-  await writeFile(path.join(f.enrollment.installRoot, "scott__example", "SKILL.md"), "user copy\n");
+  await mkdir(path.join(f.enrollment.installRoot, installSlug(f)), { recursive: true });
+  await writeFile(path.join(f.enrollment.installRoot, installSlug(f), "SKILL.md"), "user copy\n");
   const statuses = await synchronize({ distributionRoot: f.distributionRoot, index: f.index, enrollments: [f.enrollment], stateRoot: path.join(f.root, "state") });
   assert.equal(statuses[0].state, "failed");
-  assert.equal(await readFile(path.join(f.enrollment.installRoot, "scott__example", "SKILL.md"), "utf8"), "user copy\n");
+  assert.equal(await readFile(path.join(f.enrollment.installRoot, installSlug(f), "SKILL.md"), "utf8"), "user copy\n");
 });
 
 test("state persistence failure restores last-known-good before deleting backup", async (t) => {
@@ -185,7 +191,7 @@ test("state persistence failure restores last-known-good before deleting backup"
   await refreshArtifact(f);
   const statuses = await synchronize({ distributionRoot: f.distributionRoot, index: f.index, enrollments: [f.enrollment], stateRoot });
   assert.equal(statuses[0].state, "failed");
-  assert.equal(await readFile(path.join(f.enrollment.installRoot, "scott__example", "SKILL.md"), "utf8"), "# Stable\n");
+  assert.equal(await readFile(path.join(f.enrollment.installRoot, installSlug(f), "SKILL.md"), "utf8"), "# Stable\n");
 });
 
 test("Claude provider removal waits until the configured grace deadline", async () => {

@@ -22,7 +22,7 @@ async function updaterSource(root, darwin = "#!/bin/sh\nexit 0\n", windows = "@e
   await writeFile(path.join(root, "updater", "win32", "skillmesh.cmd"), windows);
 }
 
-test("distribution stage contains only stable referenced artifacts", async () => {
+test("distribution stage contains only stable referenced artifacts", { skip: process.platform === "win32" && "The live Claude package validator is unavailable in Windows CI" }, async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-publish-"));
   const sourceRoot = path.join(root, "source");
   const distributionRoot = path.join(root, "distribution");

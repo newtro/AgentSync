@@ -6,6 +6,7 @@ import test from "node:test";
 
 import { reenroll, retryPendingRetirements } from "../src/lib/reenroll.js";
 import { digestTree } from "../src/lib/fs-tree.js";
+import { providerSafeName } from "../src/lib/compiler.js";
 
 test("re-enrollment validates the new distribution before atomically switching config", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-reenroll-"));
@@ -41,7 +42,7 @@ test("re-enrollment retires a managed direct skill absent from the new repositor
   const stateRoot = path.join(root, "state");
   const oldDistribution = path.join(stateRoot, "repos", "distribution");
   const installRoot = path.join(root, "installed");
-  const destination = path.join(installRoot, "scott__old");
+  const destination = path.join(installRoot, providerSafeName("scott/old", { harness: "codex", os: "darwin", profile: "default", scope: "global" }));
   const enrollment = { id: "mac|codex|default|global|-", machine: "mac", harness: "codex", os: "darwin", profile: "default", scope: "global", mode: "direct", installRoot };
   await mkdir(oldDistribution, { recursive: true });
   await mkdir(destination, { recursive: true });
