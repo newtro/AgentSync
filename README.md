@@ -75,7 +75,7 @@ On a new Mac or Windows endpoint, the only SkillMesh-specific input is the
 source repository pointer:
 
 ```sh
-node src/cli.js onboard git@github.com:OWNER/SOURCE.git --json
+npx --yes github:newtro/AgentSync onboard https://github.com/newtro/AgentSync.git --json
 ```
 
 Provider/GitHub consent may still be requested. Add `--project /path/to/repo`
