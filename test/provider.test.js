@@ -56,6 +56,23 @@ test("Claude Code verification rejects substring, wrong version, scope, or disab
   assert.equal(result[0].installed, "unknown");
 });
 
+test("Claude Code accepts the current marketplace list URL shape without an explicit scope", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-provider-marketplace-url-"));
+  const target = { harness: "claude-code", os: "darwin", profile: "personal", scope: "global" };
+  const artifactPath = "artifact";
+  const name = providerSafeName("scott/example", target);
+  await mkdir(path.join(root, artifactPath, ".claude-plugin"), { recursive: true });
+  await writeFile(path.join(root, artifactPath, ".claude-plugin", "plugin.json"), JSON.stringify({ name, version: "1.0.0" }));
+  const artifact = { target, path: artifactPath, digest: await digestTree(path.join(root, artifactPath)) };
+  const index = { skills: { "scott/example": { providerRevision: 1, lifecycle: { state: "enabled" }, artifacts: { "claude-code--darwin--personal--global": artifact } } } };
+  const runner = async (args) => {
+    if (args[1] === "marketplace" && args[2] === "list") return { code: 0, stderr: "", stdout: JSON.stringify([{ name: "skillmesh-stable", source: "git", url: "https://github.com/newtro/AgentSync-Distribution.git" }]) };
+    return { code: 0, stderr: "", stdout: args[1] === "list" ? JSON.stringify([{ id: `${name}@skillmesh-stable`, version: "1.0.0", scope: "user", enabled: true }]) : "" };
+  };
+  const result = await reconcileClaudeCode({ enrollment: target, index, distributionRoot: root, distributionRepo: "git@github.com:newtro/AgentSync-Distribution.git", runner });
+  assert.equal(result[0].state, "installed");
+});
+
 test("one Claude plugin failure does not block an unrelated plugin", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-provider-isolation-"));
   const target = { harness: "claude-code", os: "darwin", profile: "personal", scope: "global" };

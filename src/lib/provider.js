@@ -130,7 +130,7 @@ function marketplaceNamed(output, scope) {
 function marketplacePointsTo(output, repository, scope) {
   return marketplaceRecords(output).some((record) => {
     if (record?.name !== "skillmesh-stable" || (record.scope && record.scope !== scope)) return false;
-    const observed = record.repo ?? record.repository ?? record.source?.repo ?? record.source;
+    const observed = record.repo ?? record.repository ?? record.url ?? record.source?.repo ?? record.source?.url ?? record.source;
     if (typeof observed !== "string") return false;
     const normalizedObserved = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(observed) ? `https://github.com/${observed}.git` : observed;
     try { return sameRepository(normalizedObserved, repository); } catch { return observed === repository; }
