@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "scott/build-to-complete",
+  "version": "1.0.0",
+  "displayName": "Build To Complete",
+  "description": "Implement an approved software plan phase by phase with adversarial review and repair loops.",
+  "files": ["SKILL.md", "agents/openai.yaml"],
+  "targets": {
+    "required": [
+      { "harness": "codex", "os": "darwin", "profile": "default", "scope": "global" },
+      { "harness": "codex", "os": "windows", "profile": "default", "scope": "global" },
+      { "harness": "claude-code", "os": "darwin", "profile": "personal", "scope": "global" },
+      { "harness": "claude-code", "os": "darwin", "profile": "organization", "scope": "global" },
+      { "harness": "claude-code", "os": "windows", "profile": "personal", "scope": "global" },
+      { "harness": "claude-code", "os": "windows", "profile": "organization", "scope": "global" },
+      { "harness": "claude-desktop", "os": "darwin", "profile": "personal", "scope": "global" },
+      { "harness": "claude-desktop", "os": "darwin", "profile": "organization", "scope": "global" },
+      { "harness": "claude-desktop", "os": "windows", "profile": "personal", "scope": "global" },
+      { "harness": "claude-desktop", "os": "windows", "profile": "organization", "scope": "global" }
+    ]
+  },
+  "activation": "next-launch",
+  "smokeTests": [
+    { "type": "file-contains", "path": "SKILL.md", "contains": "# Build To Complete" }
+  ]
+}

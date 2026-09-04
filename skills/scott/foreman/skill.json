@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "scott/foreman",
+  "version": "1.0.0",
+  "displayName": "Foreman",
+  "description": "Send tasks to Scott's Foreman coordinating agent and manage correlated callbacks.",
+  "files": [
+    "SKILL.md",
+    "agents/openai.yaml",
+    { "source": "scripts/foreman.py", "executable": true },
+    { "source": "tests/test_foreman.py", "executable": false }
+  ],
+  "runtimes": ["python"],
+  "targets": {
+    "required": [
+      { "harness": "codex", "os": "darwin", "profile": "default", "scope": "global" },
+      { "harness": "codex", "os": "windows", "profile": "default", "scope": "global" },
+      { "harness": "claude-code", "os": "darwin", "profile": "personal", "scope": "global" },
+      { "harness": "claude-code", "os": "darwin", "profile": "organization", "scope": "global" },
+      { "harness": "claude-code", "os": "windows", "profile": "personal", "scope": "global" },
+      { "harness": "claude-code", "os": "windows", "profile": "organization", "scope": "global" },
+      { "harness": "claude-desktop", "os": "darwin", "profile": "personal", "scope": "global" },
+      { "harness": "claude-desktop", "os": "darwin", "profile": "organization", "scope": "global" },
+      { "harness": "claude-desktop", "os": "windows", "profile": "personal", "scope": "global" },
+      { "harness": "claude-desktop", "os": "windows", "profile": "organization", "scope": "global" }
+    ]
+  },
+  "activation": "next-launch",
+  "smokeTests": [
+    { "type": "file-contains", "path": "SKILL.md", "contains": "# Foreman" },
+    { "type": "file-exists", "path": "scripts/foreman.py" }
+  ]
+}

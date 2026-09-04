@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "scott/agentsync",
+  "version": "1.0.0",
+  "displayName": "AgentSync",
+  "description": "Operate Scott's AgentSync skill publication and endpoint synchronization system.",
+  "files": ["SKILL.md", "references/operations.md"],
+  "targets": {
+    "required": [
+      { "harness": "codex", "os": "darwin", "profile": "default", "scope": "global" },
+      { "harness": "codex", "os": "windows", "profile": "default", "scope": "global" },
+      { "harness": "claude-code", "os": "darwin", "profile": "personal", "scope": "global" },
+      { "harness": "claude-code", "os": "darwin", "profile": "organization", "scope": "global" },
+      { "harness": "claude-code", "os": "windows", "profile": "personal", "scope": "global" },
+      { "harness": "claude-code", "os": "windows", "profile": "organization", "scope": "global" },
+      { "harness": "claude-desktop", "os": "darwin", "profile": "personal", "scope": "global" },
+      { "harness": "claude-desktop", "os": "darwin", "profile": "organization", "scope": "global" },
+      { "harness": "claude-desktop", "os": "windows", "profile": "personal", "scope": "global" },
+      { "harness": "claude-desktop", "os": "windows", "profile": "organization", "scope": "global" }
+    ]
+  },
+  "activation": "next-launch",
+  "smokeTests": [
+    { "type": "file-contains", "path": "SKILL.md", "contains": "# AgentSync" },
+    { "type": "file-exists", "path": "references/operations.md" }
+  ]
+}

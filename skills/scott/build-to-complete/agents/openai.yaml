@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build to Complete"
+  short_description: "Build and review every phase to completion"
+  default_prompt: "Use $build-to-complete to implement this approved plan phase by phase with adversarial review."

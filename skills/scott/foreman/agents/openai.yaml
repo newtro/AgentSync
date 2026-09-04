@@ -1,0 +1,4 @@
+interface:
+  display_name: "Foreman"
+  short_description: "Delegate work to Scott’s Grok Bot coordinator"
+  default_prompt: "Use $foreman to ask Scott’s coordinating agent to handle this task and return the result."

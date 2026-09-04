@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deploy Shared Lightsail VM"
+  short_description: "Safely deploy an app to the shared Ubuntu VM"
+  default_prompt: "Use $deploy-shared-lightsail-vm to deploy this app safely to the shared Lightsail VM."
