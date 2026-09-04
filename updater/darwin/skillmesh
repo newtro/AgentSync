@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+state_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+exec __SKILLMESH_NODE_COMMAND__ "$state_root/repos/source/src/cli.js" "$@"

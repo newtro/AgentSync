@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://skillmesh.local/schema/stable-index-v1.json",
+  "title": "SkillMesh stable index",
+  "type": "object",
+  "required": ["schemaVersion", "generation", "skills"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "generation": { "type": "integer", "minimum": 0 },
+    "skills": { "type": "object", "additionalProperties": { "$ref": "#/$defs/release" } },
+    "updater": { "$ref": "#/$defs/updater" }
+  },
+  "$defs": {
+    "semver": { "type": "string", "maxLength": 40, "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?$" },
+    "stableSemver": { "type": "string", "maxLength": 40, "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$" },
+    "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
+    "targetKey": { "type": "string", "pattern": "^(codex|claude-code|claude-desktop)--(darwin|windows)--(default|personal|organization)--(global|project)$" },
+    "target": {
+      "type": "object", "required": ["harness", "os", "profile", "scope"], "additionalProperties": false,
+      "properties": {
+        "harness": { "enum": ["codex", "claude-code", "claude-desktop"] },
+        "os": { "enum": ["darwin", "windows"] },
+        "profile": { "enum": ["default", "personal", "organization"] },
+        "scope": { "enum": ["global", "project"] }
+      }
+    },
+    "artifact": {
+      "type": "object", "required": ["target", "path", "digest", "payloadDigest", "schemaVersion", "generatorVersion"], "additionalProperties": false,
+      "properties": {
+        "target": { "$ref": "#/$defs/target" }, "path": { "type": "string", "minLength": 1 },
+        "digest": { "$ref": "#/$defs/digest" }, "payloadDigest": { "$ref": "#/$defs/digest" },
+        "schemaVersion": { "const": 1 }, "generatorVersion": { "const": "1" }
+      }
+    },
+    "lifecycle": {
+      "type": "object", "required": ["state"], "additionalProperties": false,
+      "properties": {
+        "state": { "enum": ["enabled", "deprecated", "removed"] }, "removeAfter": { "type": "string", "format": "date-time" },
+        "graceDays": { "type": "integer", "minimum": 0 }, "message": { "type": "string", "minLength": 1 },
+        "emergencyOverride": {
+          "type": "object", "required": ["approvedBy", "reason", "approvedAt"], "additionalProperties": false,
+          "properties": { "approvedBy": { "type": "string", "minLength": 1 }, "reason": { "type": "string", "minLength": 1 }, "approvedAt": { "type": "string", "format": "date-time" } }
+        }
+      }
+    },
+    "release": {
+      "type": "object", "required": ["logicalVersion", "sourceCommit", "providerRevision", "requiredTargets", "lifecycle", "artifacts"], "additionalProperties": false,
+      "properties": {
+        "skillId": { "type": "string", "maxLength": 60 }, "logicalVersion": { "$ref": "#/$defs/semver" }, "sourceCommit": { "type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$" },
+        "providerRevision": { "type": "integer", "minimum": 1 }, "minimumUpdaterVersion": { "$ref": "#/$defs/stableSemver" },
+        "requiredTargets": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/targetKey" } },
+        "deniedTargets": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/targetKey" } }, "lifecycle": { "$ref": "#/$defs/lifecycle" },
+        "artifacts": { "type": "object", "additionalProperties": { "$ref": "#/$defs/artifact" } }, "promotedAt": { "type": "string", "format": "date-time" },
+        "rollbackOf": { "$ref": "#/$defs/semver" }, "restoredFromSnapshot": { "type": "string", "minLength": 1 }
+      }
+    },
+    "updaterArtifact": {
+      "type": "object", "required": ["path", "digest"], "additionalProperties": false,
+      "properties": { "path": { "type": "string", "minLength": 1 }, "digest": { "$ref": "#/$defs/digest" } }
+    },
+    "updater": {
+      "type": "object", "required": ["version", "sourceCommit", "artifacts"], "additionalProperties": false,
+      "properties": {
+        "version": { "$ref": "#/$defs/stableSemver" },
+        "sourceCommit": { "type": "string", "pattern": "^(?:[a-f0-9]{40}|[a-f0-9]{64})$" },
+        "artifacts": {
+          "type": "object", "required": ["darwin", "win32"], "additionalProperties": false,
+          "properties": { "darwin": { "$ref": "#/$defs/updaterArtifact" }, "win32": { "$ref": "#/$defs/updaterArtifact" } }
+        }
+      }
+    }
+  }
+}

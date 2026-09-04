@@ -1,0 +1,44 @@
+name: Validate source contract against stable distribution
+
+on:
+  pull_request_target:
+
+permissions:
+  contents: read
+
+jobs:
+  stable-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Load trusted validator from protected main
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: newtro/AgentSync
+          ref: main
+          path: trusted-source
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Load pull request content as untrusted data
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: newtro/AgentSync
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: candidate
+          persist-credentials: false
+      - name: Load authoritative stable contract
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: newtro/AgentSync-Distribution
+          ref: main
+          path: distribution
+          token: ${{ secrets.AGENTSYNC_DISTRIBUTION_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Install live Claude provider validator
+        run: npm install --global @anthropic-ai/claude-code
+      - name: Reject unsafe deletion and incomplete candidates
+        run: node trusted-source/src/cli.js build --source candidate --out "$RUNNER_TEMP/contract-build" --index distribution/stable-index.json --commit "${{ github.event.pull_request.head.sha }}" --json
+      - name: Reject same-version payload, target, or lifecycle mutation
+        run: node trusted-source/src/cli.js promote --source candidate --build "$RUNNER_TEMP/contract-build" --index distribution/stable-index.json --out-index "$RUNNER_TEMP/contract-index.json" --json

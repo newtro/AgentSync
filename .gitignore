@@ -1,0 +1,8 @@
+node_modules/
+coverage/
+dist/
+.skill-sync/
+.skillmesh/
+.Codex/
+*.log
+.DS_Store

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "your-namespace/example",
+  "version": "1.0.0",
+  "displayName": "Example",
+  "description": "Demonstrates one canonical skill with target overlays.",
+  "files": ["SKILL.md"],
+  "overlays": [
+    {
+      "match": { "os": "windows" },
+      "files": [{ "source": "overlays/windows.md", "destination": "references/platform.md" }]
+    }
+  ],
+  "runtimes": [],
+  "targets": {
+    "required": [
+      { "harness": "codex", "os": "darwin", "profile": "default", "scope": "global" },
+      { "harness": "codex", "os": "windows", "profile": "default", "scope": "global" },
+      { "harness": "claude-code", "os": "darwin", "profile": "personal", "scope": "global" },
+      { "harness": "claude-code", "os": "windows", "profile": "personal", "scope": "global" }
+    ],
+    "denied": []
+  },
+  "activation": "next-launch",
+  "lifecycle": { "state": "enabled" },
+  "smokeTests": [{ "type": "file-contains", "path": "SKILL.md", "contains": "Example skill" }]
+}
