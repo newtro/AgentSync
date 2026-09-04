@@ -50,9 +50,10 @@ export function renderUpdaterTemplate(artifact, { nodePlatform = process.platfor
   return Buffer.from(text.replace(placeholder, command));
 }
 
-export async function reconcileUpdaterRelease({ release, distributionRoot, executablePath, currentVersion, platform = process.platform, install = installUpdaterArtifact }) {
+export async function reconcileUpdaterRelease({ release, distributionRoot, executablePath, currentVersion, platform = process.platform, install = installUpdaterArtifact, forceCurrentInstall = false }) {
   if (!release) return { state: "not-configured" };
-  if (!isNewer(release.version, currentVersion)) return { state: "current", version: currentVersion };
+  const comparison = compareSemanticVersions(String(release.version), String(currentVersion));
+  if (comparison < 0 || (comparison === 0 && !forceCurrentInstall)) return { state: "current", version: currentVersion };
   const artifact = release.artifacts?.[platform];
   if (!artifact) return { state: "assisted-action-required", desired: release.version, reason: `Updater release does not support platform ${platform}` };
   if (!executablePath) return { state: "assisted-action-required", desired: release.version, reason: "This source checkout is not configured as a replaceable updater executable" };
@@ -60,10 +61,6 @@ export async function reconcileUpdaterRelease({ release, distributionRoot, execu
   if (!artifactPath.startsWith(path.resolve(distributionRoot) + path.sep)) throw new Error("Updater artifact path escapes distribution root");
   await install({ artifactPath, expectedDigest: artifact.digest, executablePath });
   return { state: "installed", version: release.version, active: "verified" };
-}
-
-function isNewer(left, right) {
-  return compareSemanticVersions(String(left), String(right)) > 0;
 }
 
 export function healthCommand(executable, args, { nodePlatform = process.platform, comspec = process.env.ComSpec || "cmd.exe" } = {}) {

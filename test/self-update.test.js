@@ -49,6 +49,22 @@ test("self-update compares large semantic version components exactly", async () 
   assert.equal(invoked, true);
 });
 
+test("onboarding can replace an equal-version bootstrap with the verified managed launcher", async () => {
+  const release = { version: "1.0.0", artifacts: { darwin: { path: "updater/tool", digest: `sha256:${"a".repeat(64)}` } } };
+  let invoked = false;
+  const result = await reconcileUpdaterRelease({
+    release,
+    distributionRoot: "/distribution",
+    executablePath: "/bin/skillmesh",
+    currentVersion: "1.0.0",
+    platform: "darwin",
+    forceCurrentInstall: true,
+    install: async () => { invoked = true; }
+  });
+  assert.equal(invoked, true);
+  assert.equal(result.state, "installed");
+});
+
 test("self-update restores predecessor when activated health check fails", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-self-rollback-"));
   const artifactPath = path.join(root, "new");

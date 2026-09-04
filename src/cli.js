@@ -172,7 +172,7 @@ export async function main(argv = process.argv.slice(2), io = console) {
           return { indexPath, index, updaterRelease: await loadUpdaterRelease(indexPath) };
         }
       });
-      const updater = await reconcileUpdaterRelease({ release: result.preCommit.updaterRelease, distributionRoot: result.config.distributionCheckout, executablePath: result.config.updaterExecutable, currentVersion: CURRENT_VERSION });
+      const updater = await reconcileUpdaterRelease({ release: result.preCommit.updaterRelease, distributionRoot: result.config.distributionCheckout, executablePath: result.config.updaterExecutable, currentVersion: CURRENT_VERSION, forceCurrentInstall: true });
       const statuses = await synchronize({ distributionRoot: result.config.distributionCheckout, distributionRepo: result.config.distributionRepo, index: result.preCommit.index, enrollments: result.config.enrollments, stateRoot: state, providerSync: reconcileClaudeCode });
       const failed = statuses.some((status) => status.state === "failed");
       outputResult(io, {
