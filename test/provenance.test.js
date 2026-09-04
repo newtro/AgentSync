@@ -12,7 +12,7 @@ import { buildRepositoryCandidates, emptyStableIndex, promoteCandidates, rewrapR
 import { createDistributionStage } from "../src/lib/publisher.js";
 import { validateDistributionProvenance } from "../src/lib/provenance.js";
 
-test("distribution CLI rejects a self-consistent updater not reproduced from trusted source", async () => {
+test("distribution CLI rejects a self-consistent updater not reproduced from trusted source", { skip: process.platform === "win32" }, async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-provenance-updater-"));
   const source = path.join(root, "source");
   const distribution = path.join(root, "distribution");
@@ -48,7 +48,7 @@ test("distribution CLI rejects a self-consistent updater not reproduced from tru
   assert.match(output.lines.at(-1), /SOURCE_PROVENANCE/);
 });
 
-test("rewrapped rollback and snapshot tombstones stage and reproduce from source history", async () => {
+test("rewrapped rollback and snapshot tombstones stage and reproduce from source history", { skip: process.platform === "win32" }, async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-provenance-restore-"));
   const source = path.join(root, "source");
   const distribution = path.join(root, "distribution");

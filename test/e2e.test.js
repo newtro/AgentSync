@@ -45,7 +45,7 @@ test("one canonical skill builds, promotes, publishes, and converges across the 
     smokeTests: [{ type: "file-contains", path: "SKILL.md", contains: "canonical behavior" }]
   }));
   const skills = await discoverSkills(sourceRoot);
-  const candidates = await buildRepositoryCandidates(skills, buildRoot, "c".repeat(40));
+  const candidates = await buildRepositoryCandidates(skills, buildRoot, "c".repeat(40), () => 1, { validateClaude: async () => {} });
   assert.equal(Object.keys(candidates.candidates[0].artifacts).length, 16);
   const index = promoteCandidates(emptyStableIndex(), candidates).index;
   const stage = await createDistributionStage({ sourceRoot, buildRoot, distributionRoot, index, stageUpdaterRelease: async ({ index }) => index });

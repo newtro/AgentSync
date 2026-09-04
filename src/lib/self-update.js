@@ -4,6 +4,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 
 import { invariant } from "./errors.js";
+import { compareSemanticVersions } from "./release.js";
 
 export async function installUpdaterArtifact({ artifactPath, expectedDigest, executablePath, healthArgs = ["doctor", "--json"], runHealth = healthCheck, nodePlatform = process.platform, nodeExecutable = process.execPath }) {
   const artifact = await readFile(artifactPath);
@@ -62,13 +63,7 @@ export async function reconcileUpdaterRelease({ release, distributionRoot, execu
 }
 
 function isNewer(left, right) {
-  const a = String(left).split(".").map(Number);
-  const b = String(right).split(".").map(Number);
-  for (let index = 0; index < 3; index += 1) {
-    if ((a[index] ?? 0) > (b[index] ?? 0)) return true;
-    if ((a[index] ?? 0) < (b[index] ?? 0)) return false;
-  }
-  return false;
+  return compareSemanticVersions(String(left), String(right)) > 0;
 }
 
 export function healthCommand(executable, args, { nodePlatform = process.platform, comspec = process.env.ComSpec || "cmd.exe" } = {}) {

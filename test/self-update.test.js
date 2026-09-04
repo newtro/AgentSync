@@ -42,6 +42,13 @@ test("sync lifecycle invokes a newer updater release or reports assisted source 
   assert.equal(installed.state, "installed");
 });
 
+test("self-update compares large semantic version components exactly", async () => {
+  const release = { version: "9007199254740993.0.0", artifacts: { darwin: { path: "updater/tool", digest: `sha256:${"a".repeat(64)}` } } };
+  let invoked = false;
+  await reconcileUpdaterRelease({ release, distributionRoot: "/distribution", executablePath: "/bin/skillmesh", currentVersion: "9007199254740992.0.0", platform: "darwin", install: async () => { invoked = true; } });
+  assert.equal(invoked, true);
+});
+
 test("self-update restores predecessor when activated health check fails", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-self-rollback-"));
   const artifactPath = path.join(root, "new");

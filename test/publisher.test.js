@@ -46,7 +46,7 @@ test("distribution stage contains only stable referenced artifacts", async () =>
   const candidates = await buildRepositoryCandidates([{
     manifest: { schemaVersion: 1, id: "scott/example", version: "1.0.0", displayName: "Example", description: "Example", files: ["SKILL.md", "value.txt"], targets: { required: [target] } },
     files: new Map([["SKILL.md", Buffer.from("# Example\n")], ["value.txt", Buffer.from("stable")]])
-  }], buildRoot, SOURCE_COMMIT);
+  }], buildRoot, SOURCE_COMMIT, () => 1, { validateClaude: async () => {} });
   const index = promoteCandidates(emptyStableIndex(), candidates).index;
   const artifactPath = Object.values(index.skills["scott/example"].artifacts)[0].path;
   await writeFile(path.join(buildRoot, "quarantined.txt"), "must not publish");

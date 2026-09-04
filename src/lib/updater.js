@@ -9,6 +9,7 @@ import { stableStringify } from "./json.js";
 import { redact } from "./security.js";
 import { targetKey } from "./target.js";
 import { CURRENT_VERSION } from "./version.js";
+import { compareSemanticVersions } from "./release.js";
 
 export const UPDATER_VERSION = CURRENT_VERSION;
 
@@ -251,13 +252,7 @@ function enrollmentTargetKey(enrollment) {
 }
 
 function versionLessThan(left, right) {
-  const a = left.split(".").map(Number);
-  const b = right.split(".").map(Number);
-  for (let index = 0; index < 3; index += 1) {
-    if ((a[index] ?? 0) < (b[index] ?? 0)) return true;
-    if ((a[index] ?? 0) > (b[index] ?? 0)) return false;
-  }
-  return false;
+  return compareSemanticVersions(left, right) < 0;
 }
 
 async function preserveDrift({ stateRoot, enrollment, skillId, destination, priorDigest, observedDigest, now }) {

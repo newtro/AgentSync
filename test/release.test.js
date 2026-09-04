@@ -283,7 +283,7 @@ test("a late target failure removes partial same-version candidate output", asyn
     },
     files: new Map([["SKILL.md", Buffer.from("# Valid first target\n")]])
   };
-  const result = await buildRepositoryCandidates([skill], root, "commit");
+  const result = await buildRepositoryCandidates([skill], root, "commit", () => 1, { validateClaude: async () => {} });
   assert.equal(result.quarantined[0].skillId, "scott/partial");
   await assert.rejects(readFile(path.join(root, "artifacts", "scott__partial", "1.0.0", "codex--darwin--default--global", "SKILL.md")));
 });
@@ -312,7 +312,7 @@ test("build quarantines account overlays that conflict in shared Claude Code sto
       ["organization.md", Buffer.from("# Organization\n")]
     ])
   };
-  const result = await buildRepositoryCandidates([skill], root, "commit");
+  const result = await buildRepositoryCandidates([skill], root, "commit", () => 1, { validateClaude: async () => {} });
   assert.equal(result.candidates.length, 0);
   assert.deepEqual(result.quarantined.map(({ skillId, code }) => ({ skillId, code })), [{ skillId: "scott/conflict", code: "SHARED_STORAGE_CONFLICT" }]);
 });
@@ -357,7 +357,7 @@ test("restore tombstones propagate through Codex and Claude projections with a f
     manifest: { schemaVersion: 1, id: "scott/example", version: "1.0.0", displayName: "Example", description: "Example", files: ["SKILL.md"], targets: { required: targets } },
     files: new Map([["SKILL.md", Buffer.from("# Active\n")]])
   };
-  const built = await buildRepositoryCandidates([skill], path.join(root, "old"), "commit", () => 1);
+  const built = await buildRepositoryCandidates([skill], path.join(root, "old"), "commit", () => 1, { validateClaude: async () => {} });
   const prior = built.candidates[0];
   const removed = await rewrapRelease({ priorRelease: prior, buildRoot: path.join(root, "old"), outputRoot: path.join(root, "new"), providerRevision: 2, tombstone: true, lifecycle: { state: "removed", graceDays: 7 } });
   for (const artifact of Object.values(removed.artifacts)) {

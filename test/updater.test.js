@@ -118,6 +118,13 @@ test("denied and newer-updater targets are reported without installation", async
   assert.equal(statuses.find((item) => item.skillId === "scott/example").state, "pinned");
 });
 
+test("minimum updater comparisons preserve large semantic version precision", async () => {
+  const f = await fixture();
+  f.index.skills["scott/example"].minimumUpdaterVersion = "9007199254740993.0.0";
+  const statuses = await synchronize({ distributionRoot: f.distributionRoot, index: f.index, enrollments: [f.enrollment], stateRoot: path.join(f.root, "state") });
+  assert.equal(statuses[0].state, "pinned");
+});
+
 test("a newly denied direct target removes its previously managed copy", async () => {
   const f = await fixture();
   const stateRoot = path.join(f.root, "state");
