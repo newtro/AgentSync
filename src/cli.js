@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { mkdir, writeFile } from "node:fs/promises";
+import { realpathSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import process from "node:process";
@@ -450,6 +451,11 @@ function summarize(value) {
   return stableStringify(value).trimEnd();
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+let invokedUrl = null;
+if (process.argv[1]) {
+  try { invokedUrl = pathToFileURL(realpathSync(process.argv[1])).href; }
+  catch { invokedUrl = pathToFileURL(process.argv[1]).href; }
+}
+if (import.meta.url === invokedUrl) {
   process.exitCode = await main();
 }
