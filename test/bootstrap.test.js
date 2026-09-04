@@ -88,6 +88,7 @@ test("onboarding validation failure leaves no committed config or native schedul
   let schedules = 0;
   await assert.rejects(onboard(source, {
     stateRoot,
+    nodePlatform: "darwin",
     cloneOrUpdate: clone,
     probeCapabilities: async () => ({ targets: [] }),
     executable: "/managed/skillmesh",
@@ -112,6 +113,7 @@ test("schedule installation failure retains a recoverable pending config", async
   };
   await assert.rejects(onboard(source, {
     stateRoot,
+    nodePlatform: "darwin",
     cloneOrUpdate: clone,
     probeCapabilities: async () => ({ targets: [] }),
     executable: "/managed/skillmesh",

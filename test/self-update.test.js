@@ -76,7 +76,7 @@ test("Windows updater preserves cmd suffix and health-checks through ComSpec", a
   assert.match(invocation.args[3], /".*Skill Mesh.*skillmesh\.cmd"/);
 });
 
-test("promoted macOS launcher works with a minimal launchd PATH", async () => {
+test("promoted macOS launcher works with a minimal launchd PATH", { skip: process.platform === "win32" }, async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-self-minimal-path-"));
   const stateRoot = path.join(root, "state");
   const artifactPath = path.join(root, "skillmesh-template");

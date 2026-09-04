@@ -5,7 +5,12 @@ import { redact } from "./security.js";
 
 export function validateClaudePackage(packagePath) {
   return new Promise((resolve, reject) => {
-    const child = spawn("claude", ["plugin", "validate", "--strict", packagePath], { stdio: ["ignore", "pipe", "pipe"] });
+    const windows = process.platform === "win32";
+    const command = windows ? (process.env.ComSpec ?? "cmd.exe") : "claude";
+    const claudeArgs = ["plugin", "validate", "--strict", packagePath];
+    const quote = (value) => `"${String(value).replace(/%/g, "%%").replace(/"/g, '""')}"`;
+    const args = windows ? ["/d", "/s", "/c", `"${["claude.cmd", ...claudeArgs].map(quote).join(" ")}"`] : claudeArgs;
+    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (chunk) => { stdout += chunk; });

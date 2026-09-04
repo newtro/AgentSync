@@ -12,7 +12,7 @@ import { validateStableIndex } from "./release.js";
 import { redact } from "./security.js";
 import { synchronize } from "./updater.js";
 
-export async function reenroll(repoPointer, { stateRoot, cloneOrUpdate, probeCapabilities, providerSync, now = new Date() }) {
+export async function reenroll(repoPointer, { stateRoot, cloneOrUpdate, probeCapabilities, providerSync, nodePlatform = process.platform, now = new Date() }) {
   const old = await readEndpointConfig(stateRoot);
   invariant(!(old.pendingRetirements?.length), "REENROLL_RETIREMENTS_PENDING", "Complete the pending retirement plans with sync before changing repositories again");
   const token = randomUUID();
@@ -25,6 +25,7 @@ export async function reenroll(repoPointer, { stateRoot, cloneOrUpdate, probeCap
     projectRoots,
     cloneOrUpdate,
     probeCapabilities,
+    nodePlatform,
     updaterExecutable: old.updaterExecutable ?? null,
     now
   });

@@ -21,7 +21,7 @@ test("Claude Code reconciliation uses the exact generated plugin and shared acco
   const calls = [];
   const runner = async (args, options) => {
     calls.push({ args, options });
-    if (args[1] === "marketplace" && args[2] === "list") return { code: 0, stdout: JSON.stringify([{ name: "skillmesh-stable", repo: "git@github.com:owner/distribution.git", scope: "project" }]), stderr: "" };
+    if (args[1] === "marketplace" && args[2] === "list") return { code: 0, stdout: JSON.stringify([{ installLocation: "/plugins", name: "skillmesh-stable", repo: "owner/distribution", source: "github", scope: "project" }]), stderr: "" };
     return { code: 0, stdout: args[1] === "list" ? JSON.stringify([{ id: `${name}@skillmesh-stable`, version: "4.0.0", scope: "project", enabled: true }]) : "", stderr: "" };
   };
   const result = await reconcileClaudeCode({
@@ -92,7 +92,7 @@ test("a newly denied Claude Code target uninstalls its shared plugin identity", 
     runner: async (args) => { calls.push(args); return { code: 0, stdout: args.includes("list") ? "[]" : "", stderr: "" }; }
   });
   assert.equal(result[0].state, "denied");
-  assert.equal(result[0].active, "verified-absent");
+  assert.equal(result[0].active, "unknown");
   assert.ok(calls.some((args) => args[1] === "uninstall" && args[2] === `${name}@skillmesh-stable`));
   assert.equal(calls.some((args) => args[1] === "marketplace" && args[2] === "remove"), true);
   assert.equal(calls.some((args) => args[1] === "marketplace" && args[2] === "add"), false);

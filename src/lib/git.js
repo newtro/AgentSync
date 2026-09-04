@@ -59,13 +59,13 @@ export function validateRepoPointer(value) {
     if (url.username || url.password || url.search || url.hash) throw new SkillMeshError("REPO_CREDENTIAL", "Repository pointers may not embed credentials, query parameters, or fragments");
     return pointer;
   }
-  if (pointer.startsWith("/")) return pointer;
+  if (path.isAbsolute(pointer)) return pointer;
   throw new SkillMeshError("REPO_POINTER", "Use a GitHub HTTPS/SSH URL, file URL, or absolute local path");
 }
 
 export function repositoryIdentity(value) {
   const pointer = validateRepoPointer(value);
-  if (pointer.startsWith("/")) return `file:${path.resolve(pointer)}`;
+  if (path.isAbsolute(pointer)) return `file:${path.resolve(pointer)}`;
   if (pointer.startsWith("file:")) return `file:${path.resolve(new URL(pointer).pathname)}`;
   return pointer.replace(/\.git$/, "").replace(/^https?:\/\/github\.com\//i, "github:").replace(/^git@github\.com:/i, "github:").toLowerCase();
 }

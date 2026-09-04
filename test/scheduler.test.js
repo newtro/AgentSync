@@ -12,7 +12,7 @@ test("macOS schedule is every fifteen minutes and safely escapes paths", () => {
 test("Windows schedule invokes cmd launchers through cmd.exe with explicit safe switches", () => {
   const plan = schedulePlan({ nodePlatform: "win32", executable: "C:\\Program Files\\SkillMesh\\skillmesh.cmd", commandArgs: ["sync", "--state", "C:\\User State"], home: "C:\\Users\\test" });
   assert.match(plan.content, /<RunLevel>LeastPrivilege<\/RunLevel>/);
-  assert.match(plan.content, /<Command>cmd\.exe<\/Command>/);
+  assert.match(plan.content, /<Command>[^<]*cmd\.exe<\/Command>/i);
   assert.match(plan.content, /\/d \/s \/c/);
   assert.match(plan.content, /&quot;C:\\Program Files\\SkillMesh\\skillmesh\.cmd&quot;/);
   assert.match(plan.content, /&quot;C:\\User State&quot;/);

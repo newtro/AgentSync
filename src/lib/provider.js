@@ -53,7 +53,7 @@ export async function reconcileClaudeCode({ enrollment, index, distributionRoot,
         skillId: plugin.skillId,
         state: verifiedAbsent ? (plugin.denied ? "denied" : "removed") : "unknown",
         installed: verifiedAbsent ? null : "unknown",
-        active: verifiedAbsent ? "verified-absent" : "unknown",
+        active: "unknown",
         ...(plugin.denied ? {} : { lifecycle: "removed" }),
         sharedAcrossClaudeAccounts: true
       });
@@ -103,7 +103,7 @@ export async function reconcileClaudeCode({ enrollment, index, distributionRoot,
       if (operation.code !== 0 && !/not (?:found|installed)|does not exist/i.test(operation.stderr)) throw providerError("marketplace removal", operation);
       const visible = await runner(["plugin", "marketplace", "list", "--json"], { cwd });
       if (visible.code !== 0 || marketplaceNamed(visible.stdout, marketplaceScope)) throw new SkillMeshError("PROVIDER_MARKETPLACE", "Claude marketplace removal could not be verified");
-      if (!removed.length) results.push({ skillId: "skillmesh-stable", state: "removed", installed: null, active: "verified-absent", lifecycle: "removed", sharedAcrossClaudeAccounts: true });
+      if (!removed.length) results.push({ skillId: "skillmesh-stable", state: "removed", installed: null, active: "unknown", lifecycle: "removed", sharedAcrossClaudeAccounts: true });
     } catch (error) {
       if (!results.length) results.push({ skillId: "skillmesh-stable", state: "failed", installed: "unknown", active: "unknown", error: redact(error.message) });
       else for (const result of results) {
@@ -124,7 +124,7 @@ function marketplaceRecords(output) {
 }
 
 function marketplaceNamed(output, scope) {
-  return marketplaceRecords(output).some((record) => record?.name === "skillmesh-stable" && (!record.scope || record.scope === scope));
+  return marketplaceRecords(output).some((record) => record?.name === "skillmesh-stable" && record.scope === scope);
 }
 
 function marketplacePointsTo(output, repository, scope) {
@@ -132,13 +132,18 @@ function marketplacePointsTo(output, repository, scope) {
     if (record?.name !== "skillmesh-stable" || (record.scope && record.scope !== scope)) return false;
     const observed = record.repo ?? record.repository ?? record.source?.repo ?? record.source;
     if (typeof observed !== "string") return false;
-    try { return sameRepository(observed, repository); } catch { return observed === repository; }
+    const normalizedObserved = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(observed) ? `https://github.com/${observed}.git` : observed;
+    try { return sameRepository(normalizedObserved, repository); } catch { return observed === repository; }
   });
 }
 
 function runClaude(args, options = {}) {
   return new Promise((resolve, reject) => {
-    const child = spawn("claude", args, { cwd: options.cwd, stdio: ["ignore", "pipe", "pipe"] });
+    const windows = process.platform === "win32";
+    const quote = (value) => `"${String(value).replace(/%/g, "%%").replace(/"/g, '""')}"`;
+    const command = windows ? (process.env.ComSpec ?? "cmd.exe") : "claude";
+    const commandArgs = windows ? ["/d", "/s", "/c", `"${["claude.cmd", ...args].map(quote).join(" ")}"`] : args;
+    const child = spawn(command, commandArgs, { cwd: options.cwd, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
     child.stdout.on("data", (chunk) => { stdout += chunk; });

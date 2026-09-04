@@ -25,7 +25,7 @@ test("re-enrollment validates the new distribution before atomically switching c
     if (repo === source) await writeFile(path.join(destination, "skillmesh.config.json"), await readFile(path.join(source, "skillmesh.config.json")));
     if (repo === distribution) await writeFile(path.join(destination, "stable-index.json"), await readFile(path.join(distribution, "stable-index.json")));
   };
-  const result = await reenroll(source, { stateRoot, cloneOrUpdate, probeCapabilities: async () => ({ targets: [] }), now: new Date("2026-01-01T00:00:00Z") });
+  const result = await reenroll(source, { stateRoot, cloneOrUpdate, probeCapabilities: async () => ({ targets: [] }), nodePlatform: "darwin", now: new Date("2026-01-01T00:00:00Z") });
   const config = JSON.parse(await readFile(path.join(stateRoot, "config.json"), "utf8"));
   assert.equal(config.sourceRepo, source);
   assert.equal(config.updaterExecutable, "/managed/skillmesh");
@@ -67,7 +67,7 @@ test("re-enrollment retires a managed direct skill absent from the new repositor
     if (repo === source) await writeFile(path.join(output, "skillmesh.config.json"), await readFile(path.join(source, "skillmesh.config.json")));
     if (repo === distribution) await writeFile(path.join(output, "stable-index.json"), await readFile(path.join(distribution, "stable-index.json")));
   };
-  const result = await reenroll(source, { stateRoot, cloneOrUpdate, probeCapabilities: async () => ({ targets: [] }), now: new Date("2026-01-01T00:00:00Z") });
+  const result = await reenroll(source, { stateRoot, cloneOrUpdate, probeCapabilities: async () => ({ targets: [] }), nodePlatform: "darwin", now: new Date("2026-01-01T00:00:00Z") });
   assert.equal(result.orphanCleanup[0].lifecycle, "removed");
   await assert.rejects(readFile(path.join(destination, "SKILL.md")));
 });
