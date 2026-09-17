@@ -7,6 +7,13 @@ description: Brainstorm an idea through an interactive interview, then produce a
 
 You are running an interactive brainstorming session that moves through six named phases: **Seed, Discovery, Exploration, Expansion, Flush-Out Loop, and Crystallize**. Your goal is to deeply understand an idea through a structured interview, resolve every accepted concept down to real decisions, then produce an actionable plan document.
 
+**`<state>` below means the host harness's own state directory, relative to the
+current working directory** — `.claude/` when Claude Code is running this,
+`.Codex/` under Codex. Resolve it once at the start of the session and use the
+same directory for the rest of it; a brainstorm paused under one harness resumes
+under that one, because its draft and transcript live there. If both exist, the
+one holding a draft for this brainstorm wins.
+
 ---
 
 ## Core Rules
@@ -18,7 +25,7 @@ You are running an interactive brainstorming session that moves through six name
 5. **Be bold in Expansion** — suggest ambitious, unexpected ideas, not just safe/obvious ones
 6. **Adaptive everything** — question topics, plan sections, and suggestion categories depend on what's being brainstormed. Not all brainstorms are about software
 7. **Never trust training data for package versions** — when libraries, packages, frameworks, or tools come up, always verify current versions, security status, and alternatives using `resolve-library-id` + `query-docs` (Context7) or `WebSearch`. See the [Package & Library Research](#package--library-research) section
-8. **Maintain a session transcript** — keep a running chronological log in `.Codex/brainstorms/transcript.md` that captures every interaction verbatim. Update it after **every single step** so nothing is lost, even if the session is interrupted. See [Session Transcript](#session-transcript)
+8. **Maintain a session transcript** — keep a running chronological log in `<state>/brainstorms/transcript.md` that captures every interaction verbatim. Update it after **every single step** so nothing is lost, even if the session is interrupted. See [Session Transcript](#session-transcript)
 9. **Rigor over speed** — the value of this skill is in what it *forces into the open*, not how fast it reaches a plan. A plan is not done because the user is tired of questions; it's done when the core surface is mapped, the coverage lenses have been applied, and every behavioral decision has an acceptance criterion. Never let an accepted idea reach the plan as a vibe.
 10. **Every behavioral decision earns an acceptance criterion** — when a decision describes how the thing *behaves* (not just a preference or a name), capture a testable criterion in `Given / When / Then` form (or a checkable assertion) so the plan can be **validated**, not just built. See [Acceptance Criteria](#acceptance-criteria).
 11. **Apply the Coverage Lenses** — the [Coverage Lenses](#coverage-lenses) are the systematic, domain-agnostic checklist that drives the Flush-Out Loop. They are what prevent edge cases and core functionality from going undiscovered. Use them deliberately; do not rely on ad-hoc intuition about "what else to ask."
@@ -27,7 +34,7 @@ You are running an interactive brainstorming session that moves through six name
 
 ## Session Transcript
 
-The transcript at `.Codex/brainstorms/transcript.md` is a chronological, verbatim record of everything that happens during the brainstorm. Its purpose is to ensure that no idea, detail, or nuance from the conversation is lost — even things that don't make it into the structured draft. The transcript becomes the "source of truth" that the plan is validated against at the end.
+The transcript at `<state>/brainstorms/transcript.md` is a chronological, verbatim record of everything that happens during the brainstorm. Its purpose is to ensure that no idea, detail, or nuance from the conversation is lost — even things that don't make it into the structured draft. The transcript becomes the "source of truth" that the plan is validated against at the end.
 
 ### What to log
 
@@ -78,11 +85,11 @@ Update the transcript file **immediately after each interaction** — do not bat
 
 ## Startup: Check for In-Progress Brainstorm
 
-Before anything else, check if a draft file exists at `.Codex/brainstorms/draft.md` (relative to the current working directory).
+Before anything else, check if a draft file exists at `<state>/brainstorms/draft.md` (relative to the current working directory).
 
 **If a draft exists:**
 - Read the draft file
-- Also check for an existing transcript at `.Codex/brainstorms/transcript.md`
+- Also check for an existing transcript at `<state>/brainstorms/transcript.md`
 - Extract the topic and current phase from the YAML frontmatter
 - Ask the user via `AskUserQuestion`:
   - **"I found an in-progress brainstorm about '[topic]'. What would you like to do?"**
@@ -105,8 +112,8 @@ Codex is a cross-family model accessed via `mcp__codex-bridge__codex_ask`. It ca
 |--------|-------|--------------|
 | 1 | **Both review AND idea contribution (Recommended)** | Codex generates bold ideas alongside me in Exploration/Expansion AND audits the final plan against the transcript |
 | 2 | **Review only** | Codex only audits the final plan (Phase 5 review loop). Exploration/Expansion ideas come from me alone. |
-| 3 | **Idea contribution only** | Codex contributes ideas in Exploration/Expansion. Plan review uses an in-process Codex subagent. |
-| 4 | **Off — don't use Codex** | Plan review uses in-process Codex subagent. Idea contribution comes from me alone. No Codex calls. |
+| 3 | **Idea contribution only** | Codex contributes ideas in Exploration/Expansion. Plan review uses an in-process subagent. |
+| 4 | **Off — don't use Codex** | Plan review uses in-process subagent. Idea contribution comes from me alone. No Codex calls. |
 
 Persist the chosen mode in the draft file's frontmatter as `codexMode: review+ideas | review | ideas | off`. On resume, read it from there instead of re-prompting.
 
@@ -114,9 +121,9 @@ Persist the chosen mode in the draft file's frontmatter as `codexMode: review+id
 
 ### Reviewer dispatch helpers
 
-Every reviewer call in Phase 5 Step 5 (5a, 5c, and the repeat cycles) MUST go through the dispatch helper that matches the chosen `codexMode`. Modes `review` and `review+ideas` use Codex for review; modes `ideas` and `off` use the in-process Codex subagent.
+Every reviewer call in Phase 5 Step 5 (5a, 5c, and the repeat cycles) MUST go through the dispatch helper that matches the chosen `codexMode`. Modes `review` and `review+ideas` use Codex for review; modes `ideas` and `off` use the in-process subagent.
 
-**Dispatch: in-process Codex subagent** (used when `codexMode` is `ideas` or `off`)
+**Dispatch: in-process subagent** (used when `codexMode` is `ideas` or `off`)
 
 - Tool: `Agent` with `subagent_type: "general-purpose"`.
 - Pass the self-contained reviewer prompt from Step 5a verbatim.
@@ -158,7 +165,7 @@ Used when `codexMode` is `ideas` or `review+ideas`. Called from Phase 3 (Explora
   ```
 
 - On `isError: true`: log the failure to the transcript, fall back to this agent's ideas alone for that phase round, and surface the failure to the user before presenting suggestions.
-- On success: parse the numbered list. Merge with this agent's own ideas, deduplicate by similarity of the headline, and tag each merged idea with provenance (`[Codex]`, `[codex]`, or `[both]` when both produced the same idea independently).
+- On success: parse the numbered list. Merge with this agent's own ideas, deduplicate by similarity of the headline, and tag each merged idea with provenance (`[host]`, `[codex]`, or `[both]` when both produced the same idea independently).
 
 ---
 
@@ -191,7 +198,7 @@ Goal: Capture the initial idea.
 
 **After capturing the seed:**
 
-1. Create the draft file at `.Codex/brainstorms/draft.md`:
+1. Create the draft file at `<state>/brainstorms/draft.md`:
 
 ```markdown
 ---
@@ -204,7 +211,7 @@ started: "[ISO timestamp]"
 [Initial idea captured here]
 ```
 
-2. Create the transcript file at `.Codex/brainstorms/transcript.md` and log the phase transition, the seed question, and the user's response.
+2. Create the transcript file at `<state>/brainstorms/transcript.md` and log the phase transition, the seed question, and the user's response.
 
 ---
 
@@ -287,7 +294,7 @@ For each Expansion round (not just the first), call the [Idea-contribution dispa
 ### Merge and present
 
 - Combine this agent's ideas with Codex's. Deduplicate by headline similarity — if both produced essentially the same idea, tag it `[both]`.
-- Tag each remaining idea `[Codex]` or `[codex]` (visible to the user in the option `description`).
+- Tag each remaining idea `[host]` or `[codex]` (visible to the user in the option `description`).
 - Present 4-6 merged suggestions per round via `AskUserQuestion` with `multiSelect: true`.
 - After each round, ask if the user wants more suggestions or is ready to move on:
   - Option 1: "Show me more ideas"
@@ -460,7 +467,7 @@ If adjusting, iterate until the user approves. If "More to flush out," return to
 ### Step 2: Choose Save Location
 
 Ask via `AskUserQuestion` where to save the plan file:
-- Option 1: `.Codex/plans/` directory
+- Option 1: `<state>/plans/` directory
 - Option 2: A `docs/` or `plans/` folder in the current project
 - Option 3: "Let me specify a custom path"
 
@@ -505,7 +512,7 @@ After the plan is written, launch a reviewer agent to validate it against the fu
 
 **5a. Launch the reviewer**
 
-Dispatch through the [Reviewer dispatch helpers](#reviewer-dispatch-helpers) based on the chosen `codexMode`. The prompt below is used verbatim for the in-process Codex backend, and passed as the `prompt` argument to the Codex backend:
+Dispatch through the [Reviewer dispatch helpers](#reviewer-dispatch-helpers) based on the chosen `codexMode`. The prompt below is used verbatim for the in-process backend, and passed as the `prompt` argument to the Codex CLI backend:
 
 ```
 You are a plan reviewer. You have two documents:
@@ -584,7 +591,7 @@ Display it in chat so the user can copy/paste into a new session.
 
 ### Step 8: Cleanup
 
-Delete the draft file at `.Codex/brainstorms/draft.md` and the transcript at `.Codex/brainstorms/transcript.md`.
+Delete the draft file at `<state>/brainstorms/draft.md` and the transcript at `<state>/brainstorms/transcript.md`.
 
 ---
 
@@ -639,7 +646,7 @@ When the user mentions a specific package or library during any phase:
 
 ## Draft File Format
 
-The draft file at `.Codex/brainstorms/draft.md` tracks all progress for pause/resume:
+The draft file at `<state>/brainstorms/draft.md` tracks all progress for pause/resume:
 
 ```markdown
 ---
