@@ -1,10 +1,18 @@
 {
   "schemaVersion": 1,
   "id": "scott/build-to-complete",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "displayName": "Build To Complete",
-  "description": "Implement an approved software plan phase by phase with adversarial review and repair loops.",
-  "files": ["SKILL.md", "agents/openai.yaml"],
+  "description": "Take software work from intake to verified completion on any repository: plan, split into independently mergeable units, run tiered agents in isolated worktrees, gate on adversarial review and the project's own verification, then integrate and report.",
+  "files": [
+    "SKILL.md",
+    "agents/openai.yaml",
+    "references/crew-config.md",
+    "references/tiering.md",
+    { "source": "scripts/crew.mjs", "kind": "text", "executable": true },
+    { "source": "scripts/lib.mjs", "kind": "text", "executable": false }
+  ],
+  "runtimes": ["node"],
   "targets": {
     "required": [
       { "harness": "codex", "os": "darwin", "profile": "default", "scope": "global" },
@@ -21,6 +29,10 @@
   },
   "activation": "next-launch",
   "smokeTests": [
-    { "type": "file-contains", "path": "SKILL.md", "contains": "# Build To Complete" }
+    { "type": "file-contains", "path": "SKILL.md", "contains": "# Build To Complete" },
+    { "type": "file-contains", "path": "scripts/crew.mjs", "contains": "crew <command>" },
+    { "type": "file-exists", "path": "scripts/lib.mjs" },
+    { "type": "file-exists", "path": "references/crew-config.md" },
+    { "type": "file-exists", "path": "references/tiering.md" }
   ]
 }
