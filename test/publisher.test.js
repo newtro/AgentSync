@@ -293,6 +293,44 @@ test("distribution publication safely resumes after PR creation fails", async ()
   assert.equal(retried.url, "https://github.com/o/d/pull/9");
 });
 
+test("a closed pull request on the branch does not deadlock the next promotion", async () => {
+  // A generation only advances when its pull request merges, so closing one
+  // leaves every later run recomputing the same generation and finding the
+  // closed record. Treating that as a live proposal would wedge the pipeline.
+  const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-pr-closed-"));
+  const sourceRoot = path.join(root, "source");
+  const distributionRoot = path.join(root, "distribution");
+  const stage = path.join(root, "stage");
+  for (const repo of [sourceRoot, distributionRoot]) {
+    await mkdir(repo);
+    spawnSync("git", ["init", "-q"], { cwd: repo });
+    spawnSync("git", ["config", "user.email", "test@example.invalid"], { cwd: repo });
+    spawnSync("git", ["config", "user.name", "SkillMesh Test"], { cwd: repo });
+    await writeFile(path.join(repo, "README.md"), "initial\n");
+    spawnSync("git", ["add", "README.md"], { cwd: repo });
+    spawnSync("git", ["commit", "-q", "-m", "initial"], { cwd: repo });
+  }
+  await mkdir(path.join(stage, "artifacts"), { recursive: true });
+  await mkdir(path.join(stage, ".claude-plugin"));
+  await writeFile(path.join(stage, "artifacts", "release.txt"), "stable");
+  await writeFile(path.join(stage, ".claude-plugin", "marketplace.json"), "{}\n");
+  await writeFile(path.join(stage, "stable-index.json"), '{"generation":4}\n');
+  const calls = [];
+  const result = await publishDistributionPullRequest({
+    sourceRoot, distributionRoot, stage, generation: 4,
+    validateStage: async () => ({ generation: 4 }),
+    pushBranch: async () => {},
+    runGh: async (args) => {
+      calls.push(args[1]);
+      if (args[1] === "view") return JSON.stringify({ url: "https://github.com/o/d/pull/4", headRefOid: "deadbeef", state: "CLOSED" });
+      return "https://github.com/o/d/pull/5";
+    }
+  });
+  assert.equal(result.resumed, undefined, "a closed pull request must not be resumed");
+  assert.equal(result.url, "https://github.com/o/d/pull/5", "a fresh pull request is opened instead");
+  assert.ok(calls.includes("create"), "gh pr create must run when the existing record is closed");
+});
+
 test("successive promotion branches always start from the stable base branch", async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-pr-base-"));
   const sourceRoot = path.join(root, "source");

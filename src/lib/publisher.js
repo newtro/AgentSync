@@ -120,8 +120,16 @@ export async function publishDistributionPullRequest({ sourceRoot, distributionR
   try { existing = await runGh(["pr", "view", branch, "--json", "url,headRefOid,state"], distributionRoot); } catch { /* no pull request exists yet */ }
   if (existing) {
     const record = JSON.parse(existing);
-    invariant(record.headRefOid === headCommit && record.state === "OPEN" && typeof record.url === "string", "DISTRIBUTION_PR_COMMIT", "Existing distribution pull request does not match the staged publication commit");
-    return { branch, baseBranch: base, title, url: record.url, resumed: true };
+    // A closed or merged pull request still resolves by branch name, but it is
+    // history rather than a live proposal. Treating it as one deadlocks the
+    // pipeline: a generation only advances when its pull request merges, so a
+    // closed one would make every later run recompute the same generation, find
+    // this record, and refuse - with no way back except editing the version.
+    // The branch was rebuilt from base above, so open a fresh pull request.
+    if (record.state === "OPEN") {
+      invariant(record.headRefOid === headCommit && typeof record.url === "string", "DISTRIBUTION_PR_COMMIT", "Existing distribution pull request does not match the staged publication commit");
+      return { branch, baseBranch: base, title, url: record.url, resumed: true };
+    }
   }
   const url = await runGh(["pr", "create", "--base", base, "--title", title, "--body", body, "--head", branch], distributionRoot);
   return { branch, baseBranch: base, title, url };
