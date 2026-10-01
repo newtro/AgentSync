@@ -79,18 +79,12 @@ export async function reconcileClaudeCode({ enrollment, index, distributionRoot,
     try {
       const identity = `${plugin.name}@skillmesh-stable`;
       let operation = await runner(["plugin", "install", identity, "--scope", plugin.scope], { cwd });
-      if (operation.code !== 0 && /already installed/i.test(operation.stderr)) operation = await runner(["plugin", "update", identity, "--scope", plugin.scope], { cwd });
-      if (operation.code !== 0) throw providerError(`plugin reconcile ${plugin.skillId}`, operation);
-      const visible = await runner(["plugin", "list", "--json"], { cwd });
-      let verified = false;
-      if (visible.code === 0) {
-        try {
-          const records = JSON.parse(visible.stdout);
-          verified = Array.isArray(records) && records.some((record) => record.id === identity && record.version === plugin.version && record.scope === plugin.scope && record.enabled === true);
-        } catch {
-          verified = false;
-        }
+      // Claude Code reports an existing install either as a failure on stderr or, since 2.1.x, as exit 0 on stdout.
+      if (/already installed/i.test(`${operation.stdout ?? ""}\n${operation.stderr ?? ""}`)) {
+        operation = await pluginListed(runner, cwd, identity, plugin) ? { code: 0, stdout: "", stderr: "" } : await runner(["plugin", "update", identity, "--scope", plugin.scope], { cwd });
       }
+      if (operation.code !== 0) throw providerError(`plugin reconcile ${plugin.skillId}`, operation);
+      const verified = await pluginListed(runner, cwd, identity, plugin);
       results.push({ skillId: plugin.skillId, state: verified ? "installed" : "unknown", installed: verified ? plugin.version : "unknown", active: "unknown", accountBinding: enrollment.accountBinding ?? "unbound", sharedAcrossClaudeAccounts: true });
     } catch (error) {
       results.push({ skillId: plugin.skillId, state: "failed", installed: "unknown", active: "unknown", error: redact(error.message) });
@@ -112,6 +106,17 @@ export async function reconcileClaudeCode({ enrollment, index, distributionRoot,
     }
   }
   return results.sort((a, b) => a.skillId.localeCompare(b.skillId));
+}
+
+async function pluginListed(runner, cwd, identity, plugin) {
+  const visible = await runner(["plugin", "list", "--json"], { cwd });
+  if (visible.code !== 0) return false;
+  try {
+    const records = JSON.parse(visible.stdout);
+    return Array.isArray(records) && records.some((record) => record.id === identity && record.version === plugin.version && record.scope === plugin.scope && record.enabled === true);
+  } catch {
+    return false;
+  }
 }
 
 function marketplaceRecords(output) {

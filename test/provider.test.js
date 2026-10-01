@@ -157,3 +157,70 @@ test("Claude removal does not depend on access to the retired marketplace", asyn
   assert.equal(calls.some((args) => args[1] === "marketplace" && ["add", "update"].includes(args[2])), false);
   assert.equal(calls.some((args) => args[1] === "marketplace" && args[2] === "remove"), true);
 });
+
+async function upgradeFixture({ install, update = () => ({ code: 0, stdout: "", stderr: "" }), installedVersion = "2.0.0" }) {
+  const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-provider-upgrade-"));
+  const target = { harness: "claude-code", os: "darwin", profile: "personal", scope: "global" };
+  const artifactPath = "artifact";
+  const name = providerSafeName("scott/example", target);
+  await mkdir(path.join(root, artifactPath, ".claude-plugin"), { recursive: true });
+  await writeFile(path.join(root, artifactPath, ".claude-plugin", "plugin.json"), JSON.stringify({ name, version: "3.0.0" }));
+  const artifact = { target, path: artifactPath, digest: await digestTree(path.join(root, artifactPath)) };
+  const index = { skills: { "scott/example": { providerRevision: 3, lifecycle: { state: "enabled" }, artifacts: { "claude-code--darwin--personal--global": artifact } } } };
+  const identity = `${name}@skillmesh-stable`;
+  const calls = [];
+  let listed = installedVersion;
+  const runner = async (args) => {
+    calls.push(args);
+    if (args[1] === "marketplace" && args[2] === "list") return { code: 0, stderr: "", stdout: JSON.stringify([{ name: "skillmesh-stable", repo: "repo", scope: "user" }]) };
+    if (args[1] === "install") { const result = install(identity); if (result.code === 0 && !/already installed/i.test(result.stdout)) listed = "3.0.0"; return result; }
+    if (args[1] === "update") { const result = update(identity); if (result.code === 0) listed = "3.0.0"; return result; }
+    return { code: 0, stderr: "", stdout: args[1] === "list" ? JSON.stringify(listed ? [{ id: identity, version: listed, scope: "user", enabled: true }] : []) : "" };
+  };
+  const result = await reconcileClaudeCode({ enrollment: target, index, distributionRoot: root, distributionRepo: "repo", runner });
+  return { result, identity, updates: calls.filter((args) => args[1] === "update") };
+}
+
+test("Claude Code upgrades an already-installed plugin when install exits 0 and reports it on stdout", async () => {
+  const { result, identity, updates } = await upgradeFixture({
+    install: (id) => ({ code: 0, stderr: "", stdout: `Plugin "${id}" is already installed (scope: user) — the marketplace now offers 3.0.0 (installed: 2.0.0); run \`claude plugin update ${id}\` to get it\n` })
+  });
+  assert.deepEqual(updates, [["plugin", "update", identity, "--scope", "user"]]);
+  assert.equal(result[0].state, "installed");
+  assert.equal(result[0].installed, "3.0.0");
+});
+
+test("Claude Code still upgrades when an already-installed result fails on stderr", async () => {
+  const { result, updates } = await upgradeFixture({ install: (id) => ({ code: 1, stdout: "", stderr: `Plugin ${id} is already installed` }) });
+  assert.equal(updates.length, 1);
+  assert.equal(result[0].state, "installed");
+  assert.equal(result[0].installed, "3.0.0");
+});
+
+test("Claude Code skips update when the already-installed plugin is current", async () => {
+  const { result, updates } = await upgradeFixture({
+    installedVersion: "3.0.0",
+    install: (id) => ({ code: 0, stderr: "", stdout: `Plugin "${id}" is already installed (scope: user)\n` }),
+    update: () => ({ code: 1, stdout: "", stderr: "update should not run" })
+  });
+  assert.equal(updates.length, 0);
+  assert.equal(result[0].state, "installed");
+});
+
+test("Claude Code reports a failed upgrade of an outdated already-installed plugin", async () => {
+  const { result } = await upgradeFixture({
+    install: (id) => ({ code: 0, stderr: "", stdout: `Plugin "${id}" is already installed (scope: user)\n` }),
+    update: () => ({ code: 1, stdout: "", stderr: "fetch failed" })
+  });
+  assert.equal(result[0].state, "failed");
+  assert.match(result[0].error, /fetch failed/);
+});
+
+test("Claude Code does not update after a fresh install", async () => {
+  const { result, updates } = await upgradeFixture({
+    installedVersion: null,
+    install: (id) => ({ code: 0, stderr: "", stdout: `Successfully installed plugin: ${id} (scope: user)\n` })
+  });
+  assert.equal(updates.length, 0);
+  assert.equal(result[0].state, "installed");
+});
