@@ -168,7 +168,6 @@ export function availableReviewers() {
   const found = [];
   if (has("codex")) found.push("codex");
   if (has("claude")) found.push("claude");
-  if (has("grok")) found.push("grok");
   return found.length ? found : ["claude"];
 }
 

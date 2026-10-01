@@ -1,6 +1,6 @@
 ---
 name: brainstorm
-description: Brainstorm an idea through an interactive interview, then produce an actionable plan. Use when the user wants to think through an idea before implementing it.
+description: "Use when the user says \"brainstorm\", \"let's brainstorm\", \"help me think through this idea\", \"flesh out this idea\", \"interview me about\", or wants to explore an idea before building it. Runs a one-question-at-a-time interview, expands and pressure-tests the idea, and produces an actionable plan with acceptance criteria."
 ---
 
 # Brainstorm a Plan

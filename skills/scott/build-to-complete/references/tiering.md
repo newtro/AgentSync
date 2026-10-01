@@ -4,12 +4,14 @@ The engine's biggest lever on cost is not which model answers the first prompt -
 
 ## Published rates, per million tokens
 
-| Model | Input | Output | Relative to Sonnet 5 |
-|---|---|---|---|
-| Fable 5.1 | $10 | $50 | 5× |
-| Opus 5 | $5 | $25 | 2.5× |
-| Sonnet 5 | $2 | $10 | — |
-| Haiku 4.5 | $1 | $5 | 0.5× |
+| Model | Model ID | Input | Output | Relative to Sonnet 5.5 |
+|---|---|---|---|---|
+| Fable 5.1 | `claude-fable-5-1` | $10 | $50 | 5× |
+| Opus 5.5 | `claude-opus-5-5` | $4 | $20 | 2× |
+| Sonnet 5.5 | `claude-sonnet-5-5` | $2 | $10 | — |
+| Haiku 4.5 | `claude-haiku-4-5` | $1 | $5 | 0.5× |
+
+Anthropic first-party API rates as of 2026-09-25. Check current pricing before relying on these numbers.
 
 Subscription plans meter consumption rather than dollars, but the relative weights track these ratios closely enough to plan against.
 
@@ -38,7 +40,7 @@ Judge cost per *completed unit*, not per request. A cheaper model that needs thr
 
 ## Separate usage pools
 
-Setting `CLAUDE_CONFIG_DIR` to a second Claude profile runs workers against a different account's limits. Combined with tiering this is often the difference between finishing a large run and hitting a weekly cap partway through. Reviewers on a different provider entirely (Codex, Grok) both widen the pool and give genuine adversarial independence - a different model family finds different defects.
+Setting `CLAUDE_CONFIG_DIR` to a second Claude profile runs workers against a different account's limits. Combined with tiering this is often the difference between finishing a large run and hitting a weekly cap partway through. Reviewers on a different provider entirely (Codex) both widen the pool and give genuine adversarial independence - a different model family finds different defects.
 
 ## What a gated run actually costs
 

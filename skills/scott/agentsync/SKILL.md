@@ -1,6 +1,6 @@
 ---
 name: agentsync
-description: Operate Scott's AgentSync system to import, validate, publish, synchronize, inspect, or troubleshoot skills across Codex and Claude endpoints. Use when the user asks to add or update a shared skill, publish skills, run synchronization, onboard an endpoint, check sync status, or diagnose AgentSync.
+description: "Use when the user mentions AgentSync or SkillMesh, or asks to \"add a skill to AgentSync\", \"update/publish a shared skill\", \"sync my skills\", \"run a skill sync\", \"check sync status\", \"onboard this machine/endpoint\", \"remove/retire a skill\", or \"why didn't my skill update\". Covers editing, validating, versioning, publishing, syncing, and diagnosing skills across Codex and Claude."
 ---
 
 # AgentSync

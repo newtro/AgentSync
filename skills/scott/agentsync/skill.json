@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "id": "scott/agentsync",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "displayName": "AgentSync",
-  "description": "Operate Scott's AgentSync skill publication and endpoint synchronization system.",
+  "description": "Use when the user mentions AgentSync or SkillMesh, or asks to \"add a skill to AgentSync\", \"update/publish a shared skill\", \"sync my skills\", \"run a skill sync\", \"check sync status\", \"onboard this machine/endpoint\", \"remove/retire a skill\", or \"why didn't my skill update\". Covers editing, validating, versioning, publishing, syncing, and diagnosing skills across Codex and Claude.",
   "files": ["SKILL.md", "references/operations.md"],
   "targets": {
     "required": [

@@ -80,7 +80,7 @@ const commands = {
         "  queue done <brief> <done|failed> [reason]",
         "  queue list [--json]",
         "",
-        "  review <worktree> <brief> <report> [--provider codex|claude|grok] [--model M]",
+        "  review <worktree> <brief> <report> [--provider codex|claude] [--model M]",
         "                                       adversarial review in a read-only sandbox",
         "  verify [--in <worktree>] [--only test,build,lint,typecheck]",
         "                                       run the project's own verification commands",
@@ -266,23 +266,6 @@ const commands = {
         cwd: worktree,
         encoding: "utf8",
       });
-      if (result.status === 0 && result.stdout) fs.writeFileSync(report, result.stdout);
-    } else if (provider === "grok") {
-      const promptFile = `${report}.prompt`;
-      fs.writeFileSync(promptFile, `${prompt}Do not modify any file.\n`);
-      const args = [
-        "--prompt-file", promptFile,
-        "--cwd", worktree,
-        "--sandbox", "read-only",
-        "--always-approve",
-        "--output-format", "plain",
-        "--no-subagents",
-        "--max-turns", "300",
-        "--disable-web-search",
-      ];
-      if (flags.model) args.push("-m", flags.model);
-      result = spawnSync("grok", args, { encoding: "utf8" });
-      fs.rmSync(promptFile, { force: true });
       if (result.status === 0 && result.stdout) fs.writeFileSync(report, result.stdout);
     } else {
       die(`unknown review provider: ${provider}`);

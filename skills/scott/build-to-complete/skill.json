@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "id": "scott/build-to-complete",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "displayName": "Build To Complete",
-  "description": "Take software work from intake to verified completion on any repository: plan, split into independently mergeable units, run tiered agents in isolated worktrees, gate on adversarial review and the project's own verification, then integrate and report.",
+  "description": "Use when asked to \"build this to completion\", \"build the plan to complete\", \"fix this bug end to end\", \"work the backlog\", \"work these issues\", or \"run this phase with review gates\" on any repo. Plans and splits work into mergeable units, runs tiered agents in isolated worktrees, gates each on adversarial review and the project's own tests, then integrates and reports.",
   "files": [
     "SKILL.md",
     "agents/openai.yaml",

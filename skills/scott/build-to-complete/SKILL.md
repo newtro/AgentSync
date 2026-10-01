@@ -1,6 +1,6 @@
 ---
 name: build-to-complete
-description: Take a unit of software work from intake to verified completion on any repository - plan it, split it into independently mergeable units, run tiered agents in isolated worktrees, gate every unit behind adversarial review and the project's own verification, then integrate and report. Use when asked to build a plan to completion, fix a complicated bug end to end, work a backlog of issues, or run a phase gated by independent review. Project-agnostic: intake and outtake are adapters, the engine is the same everywhere.
+description: "Use when asked to \"build this to completion\", \"build the plan to complete\", \"fix this bug end to end\", \"work the backlog\", \"work these issues\", or \"run this phase with review gates\" on any repo. Plans and splits work into mergeable units, runs tiered agents in isolated worktrees, gates each on adversarial review and the project's own tests, then integrates and reports."
 ---
 
 # Build To Complete
@@ -21,14 +21,20 @@ Do not use this skill to invent product scope. If the goal is genuinely ambiguou
 
 ## The engine
 
-`scripts/crew.mjs` owns worktrees, the brief queue, review dispatch, and verification. Node standard library only; works on macOS and Windows. Run `crew.mjs help` for the full surface.
+`scripts/crew.mjs` owns worktrees, the brief queue, review dispatch, and verification. Node standard library only; works on macOS and Windows. It is not on `PATH` - invoke it by its path inside this skill's directory:
+
+```sh
+node "${CLAUDE_SKILL_DIR}/scripts/crew.mjs" help
+```
+
+Claude Code substitutes `${CLAUDE_SKILL_DIR}` with this skill's directory. In a harness that does not, use the absolute path of `scripts/crew.mjs` next to this SKILL.md. Everywhere below, `crew.mjs <command>` is shorthand for `node "${CLAUDE_SKILL_DIR}/scripts/crew.mjs" <command>`; run `help` for the full surface.
 
 State lives outside the project (`~/.claude/crew/<repo-slug>/`) - never commit crew files, never add them to `.gitignore`.
 
 ## Phase 0 - orient
 
-1. `crew.mjs doctor` - confirms the repo, reviewers available, verification commands, tiers.
-2. If config is `inferred` and the inference is wrong or thin, run `crew.mjs init` and correct `.claude/crew.json`. See `references/crew-config.md`.
+1. `node "${CLAUDE_SKILL_DIR}/scripts/crew.mjs" doctor` - confirms the repo, reviewers available, verification commands, tiers.
+2. If config is `inferred` and the inference is wrong or thin, run `node "${CLAUDE_SKILL_DIR}/scripts/crew.mjs" init` and correct `.claude/crew.json`. See `references/crew-config.md`.
 3. Read the repository's own guidance (CLAUDE.md, AGENTS.md, contributing docs) and honour it over anything here.
 
 Never invent a test command. If `doctor` reports no verification, ask the user for it or find it in CI config - a loop that cannot verify is not this skill.
