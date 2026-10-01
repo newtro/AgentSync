@@ -224,3 +224,42 @@ test("Claude Code does not update after a fresh install", async () => {
   assert.equal(updates.length, 0);
   assert.equal(result[0].state, "installed");
 });
+
+async function removalFixture({ uninstall, listedAfter = false }) {
+  const root = await mkdtemp(path.join(os.tmpdir(), "skillmesh-provider-removal-"));
+  const target = { harness: "claude-code", os: "darwin", profile: "organization", scope: "global" };
+  const artifactPath = "artifact";
+  const name = providerSafeName("scott/foreman", target);
+  await mkdir(path.join(root, artifactPath, ".claude-plugin"), { recursive: true });
+  await writeFile(path.join(root, artifactPath, ".claude-plugin", "plugin.json"), JSON.stringify({ name, version: "2.0.0" }));
+  const artifact = { target, path: artifactPath, digest: await digestTree(path.join(root, artifactPath)) };
+  const index = { skills: { "scott/foreman": { providerRevision: 2, lifecycle: { state: "removed" }, artifacts: { "claude-code--darwin--organization--global": artifact } } } };
+  const identity = `${name}@skillmesh-stable`;
+  const runner = async (args) => {
+    if (args[1] === "uninstall") return uninstall(identity);
+    if (args[1] === "marketplace" && args[2] === "list") return { code: 0, stderr: "", stdout: "[]" };
+    return { code: 0, stderr: "", stdout: args[1] === "list" ? JSON.stringify(listedAfter ? [{ id: identity, version: "2.0.0", scope: "user", enabled: true }] : []) : "" };
+  };
+  return reconcileClaudeCode({ enrollment: target, index, distributionRoot: root, distributionRepo: "repo", runner });
+}
+
+const notFoundInInstalled = (id) => ({ code: 1, stdout: "", stderr: `Failed to uninstall plugin "${id}": Plugin "${id}" not found in installed plugins\n` });
+
+test("Claude Code treats a plugin already uninstalled by another enrollment as removed", async () => {
+  const result = await removalFixture({ uninstall: notFoundInInstalled });
+  assert.equal(result[0].state, "removed");
+  assert.equal(result[0].installed, null);
+  assert.equal(result[0].error, undefined);
+});
+
+test("Claude Code verifies absence through plugin list after a not-found uninstall", async () => {
+  const result = await removalFixture({ uninstall: notFoundInInstalled, listedAfter: true });
+  assert.equal(result[0].state, "unknown");
+  assert.equal(result[0].installed, "unknown");
+});
+
+test("Claude Code still reports other uninstall failures", async () => {
+  const result = await removalFixture({ uninstall: (id) => ({ code: 1, stdout: "", stderr: `Failed to uninstall plugin "${id}": permission denied` }) });
+  assert.equal(result[0].state, "failed");
+  assert.match(result[0].error, /permission denied/);
+});

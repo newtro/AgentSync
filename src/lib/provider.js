@@ -38,7 +38,8 @@ export async function reconcileClaudeCode({ enrollment, index, distributionRoot,
     try {
       const identity = `${plugin.name}@skillmesh-stable`;
       const operation = await runner(["plugin", "uninstall", identity, "--scope", plugin.scope], { cwd });
-      if (operation.code !== 0 && !/not installed/i.test(operation.stderr)) throw providerError(`plugin removal ${plugin.skillId}`, operation);
+      // An already-absent plugin is "not installed" or, since Claude Code 2.1.x, "not found in installed plugins"; plugin list below confirms absence.
+      if (operation.code !== 0 && !/not installed|not found in installed plugins/i.test(`${operation.stdout ?? ""}\n${operation.stderr ?? ""}`)) throw providerError(`plugin removal ${plugin.skillId}`, operation);
       const visible = await runner(["plugin", "list", "--json"], { cwd });
       let verifiedAbsent = false;
       if (visible.code === 0) {
