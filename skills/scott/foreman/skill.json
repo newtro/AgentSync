@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "scott/foreman",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "displayName": "Foreman",
   "description": "Retired skill. Disabled pending removal; performs no behavior.",
   "files": [
@@ -74,7 +74,13 @@
   "activation": "next-launch",
   "lifecycle": {
     "state": "removed",
-    "message": "Retired at the owner's request; the backing service is no longer used."
+    "graceDays": 0,
+    "message": "Retired at the owner's request; the backing service is no longer used.",
+    "emergencyOverride": {
+      "approvedBy": "Scott Smith (sesmith2k)",
+      "reason": "Grok/xAI subscription dropped; Foreman runs on Grok Bot and is retired",
+      "approvedAt": "2026-10-01T17:47:45Z"
+    }
   },
   "smokeTests": []
 }
