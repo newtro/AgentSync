@@ -6,7 +6,11 @@ Three places in the brainstorm ask a second model to look at the work:
 |------|-------|-------------|
 | Idea contribution | 3 (once) and 4 (every round) | Codex, only when `codexMode` is `ideas` or `review+ideas` |
 | Completeness critic | 4.5 Step 4 | Codex when `codexMode` is `review` or `review+ideas`, otherwise a subagent |
-| Plan reviewer | 5 Step 5 (every round) | Codex when `codexMode` is `review` or `review+ideas`, otherwise a subagent |
+| Plan reviewer | 5 Steps 5 and 7 (every round) | Codex when `codexMode` is `review` or `review+ideas`, otherwise a subagent |
+
+The Goldfish gate in Phase 5 Step 6 uses the same backends but a different
+briefing — the plan only, never the transcript. Its prompts are in
+goldfish.md.
 
 Every call gets file paths, not pasted content, so the second model reads the
 transcript and draft or plan itself. Use absolute paths.

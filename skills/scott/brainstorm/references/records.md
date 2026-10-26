@@ -28,7 +28,11 @@ Give every entry a timestamp. Log:
 - Coverage Lens findings per concept or flow (including lenses marked N/A) and
   the acceptance criteria captured.
 - The outline review and any adjustments.
-- Plan review findings, the user's responses, and the resulting plan changes.
+- The system-understanding check and the user's corrections.
+- Each round of the technical proposal: what was proposed, challenged, and settled.
+- Plan review and Goldfish findings, each finding's classification (propose
+  fix / contest / design decision), the user's responses, and the resulting
+  plan changes.
 
 ### Format
 
@@ -68,9 +72,10 @@ should hold all 7.
 ```markdown
 ---
 topic: "The brainstorm topic"
-phase: "discovery"   # seed | discovery | exploration | expansion | flush-out | crystallize
+phase: "discovery"   # seed | discovery | exploration | expansion | flush-out | technical-proposal | crystallize
 started: "2026-02-08T14:30:00"
 codexMode: "review+ideas"   # review+ideas | review | ideas | off
+reviewRound: 0   # Phase 5 review rounds used; see goldfish.md "Stopping"
 ---
 
 ## Seed
@@ -79,6 +84,10 @@ codexMode: "review+ideas"   # review+ideas | review | ideas | off
 ## Discovery
 ### Q: [question]
 A: [answer]
+
+## System Understanding
+[How the relevant part of the system works today, as confirmed or corrected by
+the user: components, data flow, and the files that matter, by path.]
 
 ## Exploration
 ### Q: [question]
@@ -121,6 +130,13 @@ Notes: [contradictions surfaced / new sub-systems / deferred items / lenses mark
 - Findings by lens: [...]
 - Technical gaps resolved with defaults: [...]
 - Design decisions routed to the user: [...]
+
+## Technical Proposal
+[The agreed approach in prose: components, a block diagram if useful, data
+shapes and lifecycle, approach per core flow.]
+
+### Files
+- `path/to/file` (create | modify | delete) — [why]
 
 ## Acceptance Criteria
 ### [FLOW-n / CON-n]

@@ -5,11 +5,18 @@ description: "Use when the user says \"brainstorm\", \"let's brainstorm\", \"hel
 
 # Brainstorm a Plan
 
-Run an interactive brainstorm that moves through six named phases: **Seed,
-Discovery, Exploration, Expansion, Flush-Out Loop, and Crystallize**. The goal
-is to understand an idea through a structured interview, resolve every
-accepted concept down to real decisions, and produce a plan that can be both
-built and validated.
+Run an interactive brainstorm that moves through seven named phases: **Seed,
+Discovery, Exploration, Expansion, Flush-Out Loop, Technical Proposal, and
+Crystallize**. The goal is to understand an idea through a structured
+interview, resolve every accepted concept down to real decisions, and produce a
+plan that can be both built and validated.
+
+This session is the **Elephant**: it remembers everything that was said. The
+plan it produces must not depend on that memory. Before the plan is done, it
+is tested against **Goldfish** — fresh sessions that see only the plan and the
+files it references (goldfish.md). Design is the source of truth the code is
+built from, so every judgment the implementer would otherwise make has to be
+written down here.
 
 `<state>` below means the host harness's own state directory, relative to the
 current working directory: `.claude/` when Claude Code is running this,
@@ -27,7 +34,8 @@ Read these when the step that needs them comes up, not up front:
 | [references/second-opinion.md](references/second-opinion.md) | Any second-opinion call: the availability check, idea contribution in Phases 3–4, the completeness critic in 4.5, and the plan reviewer in Phase 5. Holds the exact `codex exec` invocation and the prompts. |
 | [references/coverage-lenses.md](references/coverage-lenses.md) | Starting Phase 4.5 Step 2, and when briefing the completeness critic. |
 | [references/package-research.md](references/package-research.md) | A library, framework, or tool comes up in any phase, and before writing the plan. |
-| [references/plan-document.md](references/plan-document.md) | Phase 5 Steps 1 and 4 (outline and plan sections) and Step 7 (handoff prompt). |
+| [references/plan-document.md](references/plan-document.md) | Phase 4.6 (what the technical proposal must settle), Phase 5 Steps 1 and 4 (outline and plan sections), and Step 9 (handoff prompt). |
+| [references/goldfish.md](references/goldfish.md) | Phase 5 Step 6: the zero-context Goldfish gate, its prompts, how to resolve findings, and when to stop. |
 | [references/example-session.md](references/example-session.md) | You want to see a whole session end to end, including the Flush-Out Loop. |
 
 ## Core rules
@@ -41,7 +49,7 @@ Read these when the step that needs them comes up, not up front:
    to 4 related, independent questions per call; ask a question on its own when
    it is high-impact, irreversible, or its options depend on another answer.
 3. **Let the user set the pace.** When there seems to be enough information,
-   offer to go deeper or move on, and wait for the user to choose Crystallize.
+   offer to go deeper or move on, and wait for the user to choose to move on.
    The user knows better than you whether the idea has been explored enough.
 4. **Announce each phase** by name and number, e.g. "**Phase 2: Discovery**",
    so the user always knows where the session is.
@@ -65,6 +73,12 @@ Read these when the step that needs them comes up, not up front:
 11. **Use the Coverage Lenses in the Flush-Out Loop.** They are the systematic
     checklist that finds edge cases and missing core functionality; ad-hoc
     intuition about "what else to ask" reliably misses them.
+12. **Challenge; do not agree by default.** Question the user's assumptions,
+    lead with what is missing or risky, and give the strongest
+    counter-argument before endorsing a direction. Agreement is earned by an
+    idea surviving scrutiny. No flattery ("great idea") — it is noise, and an
+    agreeable interviewer lets the gaps through that this skill exists to
+    find.
 
 ## Startup
 
@@ -118,6 +132,14 @@ Goal: understand goals, context, and motivation.
 - If the topic touches the current project, have an `Explore` subagent (Agent
   tool) scan the codebase for relevant patterns and the tech stack, and ground
   your questions in what it finds.
+- **Check your understanding before building on it.** After the scan, write a
+  short account of how the relevant part of the system works today (main
+  components, data flow, the files that matter) under `## System
+  Understanding` in the draft, show it, and ask whether it is right (looks
+  right / partly wrong / mostly wrong). A misunderstanding found now costs one
+  answer; found in implementation, it costs the build. When the user corrects
+  something, re-read the file they point to rather than taking the correction
+  on faith, and fix the account.
 - Ask whether there are docs, files, or references you should read.
 - After each answer, append the Q&A under `## Discovery` in the draft, update
   `phase`, and log the exchange and any research in the transcript.
@@ -219,9 +241,34 @@ with recorded defaults; route real design decisions to the user in batches of
 up to 4; add acceptance criteria for any newly resolved behavior.
 
 **Step 5 — Loop until dry.** Ask whether anything else needs flushing out
-("Looks fully flushed out — crystallize" / "More to flush out"). Repeat Steps
+("Looks fully flushed out — move on" / "More to flush out"). Repeat Steps
 2–5 until the user says it is done and the critic reports no high-severity
-gaps.
+gaps, then go to Phase 4.6 (software) or Phase 5.
+
+## Phase 4.6: Technical Proposal
+
+Goal: settle how it will be built, in prose, before anything is written as a
+plan. Skip this phase for non-software brainstorms and say so; for software,
+skip it only when the user chooses to.
+
+1. **You propose first.** Based on the system understanding and every decision
+   so far, write a first-draft technical proposal in prose: the components and
+   how they fit together, a block diagram (ASCII or Mermaid) where it helps,
+   data shapes and their lifecycle, the files to create or change and why, and
+   the approach for each core flow. Short pseudocode is fine; code is not.
+   Proposing first is deliberate: it shows whether you understood the problem,
+   and reacting to a user-drafted design misses blind spots.
+2. **Argue it out.** Ask the user, one question per call, where the proposal is
+   wrong or thin, and challenge your own choices ("Why this pattern and not
+   X?"). When either of you is unsure how the system really works, read the
+   file rather than guess. Expect several rounds.
+3. **Record** the agreed approach under `## Technical Proposal` in the draft,
+   every rejected alternative as a decision-log entry (they become the plan's
+   Alternatives Considered and guard against the implementer re-proposing
+   them), and the file list with a one-line reason per file.
+
+Move on when the user agrees the approach is settled. The plan's Detailed
+Implementation Plan (plan-document.md) is written from this section.
 
 ## Phase 5: Crystallize
 
@@ -230,27 +277,47 @@ Goal: write the plan and validate it against the transcript.
 1. **Confirm the outline.** Show the planned section headings with a one-line
    summary each (see plan-document.md). Options: "Looks good, write it" /
    "Adjust the outline" / "More to flush out" (returns to Phase 4.5).
-2. **Choose where to save it:** `<state>/plans/`, a `docs/` or `plans/` folder
-   in the project, or a custom path.
+2. **Choose where to save it.** For a project, recommend
+   `docs/designs/<topic-slug>.md` in the repository: the plan is the source of
+   truth the code is built from and belongs under version control next to it.
+   Other options: an existing `docs/` or `plans/` folder, `<state>/plans/`
+   (outside the repo, for non-project brainstorms), or a custom path.
 3. **Research before writing.** Run package-research.md for every library,
    framework, or tool discussed; carry verified versions, compatibility notes,
    and advisories into the plan, and flag anything the brainstorm assumed that
    is no longer true.
-4. **Write the plan** with sections that fit the subject, including the
-   mandatory ones listed in plan-document.md, and keep the `FLOW`/`CON`/`DEC`/`AC`
-   IDs. The plan covers the what and the why — behavior, architecture at a high
-   level, edge cases, acceptance criteria — and leaves code-level how to the
-   implementer.
-5. **Review loop.** Send the transcript and plan to the plan reviewer
-   (second-opinion.md). If it returns `PLAN_COMPLETE`, move on. Otherwise
-   present its gaps in batches of up to 4 questions, each with "Yes, add this" /
-   "No, skip this" / "Modify the suggestion"; apply the approved additions, log
-   everything, and review again. Repeat until `PLAN_COMPLETE`; most plans
-   converge in one or two rounds. An errored or empty review is not a pass.
-6. **Summarize** the plan in chat and say it was validated against the
-   session transcript.
-7. **Next step.** Offer "Begin implementation" (read the plan and start) or
-   "Generate a handoff prompt" (a copy-paste block; contents in
-   plan-document.md).
-8. **Clean up.** Delete `<state>/brainstorms/draft.md`, `transcript.md`, and
-   any `second-opinion*.md` scratch files there.
+4. **Write the plan section by section**, not in one pass: write one section,
+   re-read it against the draft, then the next. Use sections that fit the
+   subject, including the mandatory ones in plan-document.md, and keep the
+   `FLOW`/`CON`/`DEC`/`AC` IDs. The plan has two parts: the feature spec (what
+   and why) and, for software, a Detailed Implementation Plan written from the
+   Technical Proposal that leaves the implementer no design decisions.
+   Reference project files by repo-relative path so a reader can open them.
+5. **Transcript review.** Send the transcript and plan to the plan reviewer
+   (second-opinion.md). It checks that nothing said in the session was lost.
+   An errored or empty review is not a pass. Hold its gaps for Step 7.
+6. **Goldfish gate.** Run the zero-context Goldfish (goldfish.md) on the plan
+   alone. They check that the plan stands on its own: a fresh reader can
+   explain it back and could implement it without asking. Run them in
+   parallel with Step 5 when the backends allow.
+7. **Resolve.** Classify every finding from Steps 5 and 6 as propose fix,
+   contest, or design decision (goldfish.md, "Resolving findings"); apply the
+   fixes, ask the user the design decisions in batches of up to 4, and show
+   contested items for the user to overrule. Then re-run the affected
+   reviewers against the revised plan, within the shared budget and stopping
+   rule in goldfish.md. Log everything.
+8. **Approve and summarize.** Record the gate result in the plan header's
+   `Readiness` line, and set the status to `Approved` once the user accepts
+   it. Summarize the plan in chat, say it was validated against the
+   transcript and passed the Goldfish gate (or list what remained open), and
+   give its path.
+9. **Next step.** If the gate passed, offer "Begin implementation" (read the
+   plan and start, or hand it to build-to-complete) or "Generate a handoff
+   prompt" (a copy-paste block; contents in plan-document.md). If findings
+   are still open, offer "Revise the plan" (more review rounds, with the
+   user's go-ahead) or "Pause here"; direct implementation is not offered,
+   and a handoff, if the user insists, says readiness is open and must pass
+   before building (build-to-complete re-runs it).
+10. **Clean up** — only once the gate has passed. Delete `<state>/brainstorms/draft.md`, `transcript.md`, and
+    any `second-opinion*.md` and `goldfish-*.md` scratch files there. The plan
+    holds everything worth keeping; the discussion itself is not.

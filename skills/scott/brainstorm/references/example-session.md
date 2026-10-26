@@ -101,29 +101,57 @@ Codex: "High: no behavior defined for a tracked file that is a symlink on
 
 Step 5 —
 [AskUserQuestion: "Fully flushed out, or more to flush out?"]
-User selects: "Looks fully flushed out — crystallize"
+User selects: "Looks fully flushed out — move on"
+
+Agent: **Phase 4.6: Technical Proposal**
+[Proposes first, in prose: a single Node CLI, a manifest file, a sync engine
+ that copies or symlinks per OS, and the files it would create, with an ASCII
+ block diagram]
+[AskUserQuestion: "Where is this proposal wrong or thin?"]
+User selects: "Other: symlinks need admin rights on Windows"
+[Reads the Windows notes it gathered in Discovery, revises to copy-by-default
+ with symlinks opt-in, logs DEC-9 with symlink-everywhere as the rejected
+ alternative]
+User selects: "Approach is settled"
 
 Agent: **Phase 5: Crystallize**
 [Shows the outline: Vision; Actors & core flows; Key decisions; Edge cases &
  failure handling; Dependencies & sequencing; Tech stack; Acceptance
  criteria; Validation strategy; Open questions]
 User selects: "Looks good, write it"
-[AskUserQuestion: where to save] User selects: "docs/plans/ in this project"
+[AskUserQuestion: where to save] User selects: "docs/designs/ in this project"
 [Re-checks every package mentioned against current registry pages]
-[Writes the plan, keeping FLOW/DEC/AC IDs]
+[Writes the plan section by section, keeping FLOW/DEC/AC IDs, ending with a
+ Detailed Implementation Plan listing every file]
+
+[In parallel: the comprehension, zoom-out, and implementation-readiness
+ Goldfish, each given only the plan path]
+Goldfish (readiness): "Major — the plan never says what happens to a dotfile
+ that exists on disk but is not in the manifest: overwrite, skip, or adopt?"
+Goldfish (comprehension): explains the goal correctly but describes conflict
+ handling as last-write-wins, which the plan never says.
+[Classifies: the first is a design decision; the second is a propose-fix —
+ the plan is missing the conflict rule the user chose in DEC-6]
 
 [Runs codex exec with the plan-reviewer prompt, transcript, and plan]
 Codex: "The transcript records the user wants the server to be pull-only, but
  the plan has it pushing changes too."
-[AskUserQuestion: "The reviewer found a gap — you said the server should be
- pull-only. Add this to the plan?"
- Options: "Yes, add this" / "No, skip this" / "Modify the suggestion"]
-User selects: "Yes, add this"
-[Updates the plan, reviews again]
+[Applies both propose-fixes (pull-only server, DEC-6 conflict rule)]
+[AskUserQuestion: "A file exists on disk but not in the manifest — what should
+ sync do?" Options: "Skip and warn (Recommended)" / "Adopt into manifest" /
+ "Overwrite" / "Not sure — recommend one"]
+User selects: "Skip and warn (Recommended)"
+[Adds DEC-10 and AC-14; round 1 re-runs the transcript reviewer and fresh
+ comprehension, zoom-out, and readiness Goldfish on the revised plan]
 Codex: "PLAN_COMPLETE: The plan accurately captures all topics discussed in
  the brainstorm session."
+Goldfish (comprehension): restates conflict handling as the DEC-6 rule; only
+ nits remain.
+Goldfish (zoom-out): no blockers or majors.
+Goldfish (readiness): "READY_TO_IMPLEMENT"
 
-[Summarizes the plan in chat, noting it was validated against the transcript]
+[Marks the plan Approved; summarizes it in chat, noting it was validated
+ against the transcript and passed the Goldfish gate]
 [AskUserQuestion: "Begin implementation" / "Generate a handoff prompt"]
 User selects: "Generate a handoff prompt"
 
@@ -133,5 +161,5 @@ Agent: Here's your handoff prompt:
      and instructions that the acceptance criteria define done]
 
 [Deletes the draft, transcript, and second-opinion scratch files]
-Brainstorm complete. Plan saved to docs/plans/dotfiles-cli.md.
+Brainstorm complete. Plan saved to docs/designs/dotfiles-cli.md.
 ```
