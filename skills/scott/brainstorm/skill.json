@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "scott/brainstorm",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "displayName": "Brainstorm",
   "description": "Use when the user says \"brainstorm\", \"let's brainstorm\", \"help me think through this idea\", \"flesh out this idea\", \"interview me about\", or wants to explore an idea before building it. Runs a one-question-at-a-time interview, expands and pressure-tests the idea, and produces an actionable plan with acceptance criteria.",
   "files": [

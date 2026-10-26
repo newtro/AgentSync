@@ -24,6 +24,22 @@ current working directory: `.claude/` when Claude Code is running this,
 a paused brainstorm resumes under the harness whose directory holds its draft
 and transcript. If both exist, the one holding a draft for this brainstorm wins.
 
+**Under Codex.** Tool names in this skill are Claude Code's. Map them:
+
+- `AskUserQuestion` → Codex's structured question tool (for example
+  `request_user_input`), or plain chat. It has no multi-select: ask
+  accept/decline per idea, or ask for a free-text list of the IDs to keep.
+  Never treat silence or a preselected option as an answer.
+- `Agent` (`Explore`, `general-purpose`) → Codex's agent spawn with
+  `fork_turns: "none"` so it inherits no conversation; state the role in the
+  message, since there is no `subagent_type`.
+- `WebSearch` / `WebFetch` → Codex's web search and open-page tools; read the
+  source page, not the search snippet.
+- `$ARGUMENTS` → the text that came with the invocation.
+- Long `codex exec` calls → there is no shell timeout to raise; keep the
+  command's session and poll it. A yielded command is still running, not
+  failed.
+
 ## Reference files
 
 Read these when the step that needs them comes up, not up front:

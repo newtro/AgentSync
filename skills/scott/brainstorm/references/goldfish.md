@@ -35,10 +35,12 @@ not be able to write.
   `goldfish-<name>.md`) so they can run in parallel.
 - Otherwise, use the host's own fresh agent. In Claude Code: the Agent tool
   with `subagent_type: "Plan"` (it has no file-writing tools), as a new agent
-  per Goldfish — never a fork or a resumed agent. In Codex as host: an
-  in-session spawn that inherits no conversation turns; if the host cannot
-  guarantee that, ask the user whether to allow `codex exec` for the gate
-  rather than calling it despite `codexMode: off`.
+  per Goldfish — never a fork or a resumed agent. In Codex as host: the
+  agent spawn with `fork_turns: "none"`, but only when the session's own
+  permissions are already read-only, because the spawn has no per-agent
+  read-only setting. In a writable Codex session, ask the user whether to
+  allow `codex exec --sandbox read-only` for the gate rather than calling it
+  despite `codexMode: off`.
 
 If no zero-context backend is available, say so and stop the gate; a review
 in this session is not a Goldfish review. The same failure rules apply: a

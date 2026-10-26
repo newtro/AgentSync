@@ -60,9 +60,14 @@ the reviewer tier, read-only:
 - **Claude Code:** the Agent tool with `subagent_type: "Plan"` (it has no
   file-writing tools), as a new agent — never a fork or a resumed agent.
 - **Codex or any host:** a separate CLI process, e.g.
-  `codex exec --sandbox read-only --ephemeral --cd <worktree or repo>
-  --output-last-message <answer file> - < <prompt file>`. Inside Codex, do
-  not use an in-session spawn that inherits the conversation.
+  `codex exec --sandbox read-only --ephemeral --cd <integration worktree>
+  --model <codex model> --output-last-message <answer file> - < <prompt
+  file>`, where `<codex model>` is a model Codex accepts — never the Claude
+  tier alias (`opus` and the like), whichever harness is hosting. Inside Codex, the agent spawn (`fork_turns: "none"`) is acceptable
+  only when the session is already read-only, since the spawn has no
+  per-agent read-only setting; otherwise use the CLI process. Omitting
+  `--model` uses the CLI's default, which does not enforce the reviewer
+  tier.
 
 If neither is available, stop and tell the user; a review in the planning
 context is not a Goldfish review. Give it only this prompt:

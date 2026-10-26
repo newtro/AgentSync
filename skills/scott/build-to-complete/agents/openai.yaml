@@ -1,4 +1,4 @@
 interface:
   display_name: "Build to Complete"
   short_description: "Plan, build, review and verify work to completion on any repo"
-  default_prompt: "Use $build-to-complete to take this work from intake to verified completion: plan it, split it into independently mergeable units, run tiered agents in isolated worktrees, and gate each unit on adversarial review plus the project's own verification."
+  default_prompt: "Use the build-to-complete skill to take this work from intake to verified completion: plan it, split it into independently mergeable units, run tiered agents in isolated worktrees, and gate each unit on adversarial review plus the project's own verification."
